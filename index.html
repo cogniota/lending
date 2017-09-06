@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>cognIOTA</title>
+
+  <link rel="stylesheet" href="dist/app.css">
+
+  <!-- <script src="dist/jquery-3.2.1.min.js"></script> -->
+  <script src="dist/svg.min.js"></script>
+  <script src="dist/svg.intersections.js"></script>
+  <script src="dist/svg.pathmorphing.js"></script>
+  <script src="dist/svg.shapes.min.js"></script>
+  <script src="dist/svg.easing.min.js"></script>
+  <script src="dist/app.js"></script>
+
+  <link href="https://fonts.googleapis.com/css?family=Rajdhani" rel="stylesheet">
+</head>
+<body>
+  <div id="first">
+    <div id="main">
+      <img src="dist/5.png"
+           id="logo">
+      <div id="concept">
+        <ol>
+          <li>Machine Learning as a service</li>
+          <!-- <li>AI enhanced IoT Economy</li> -->
+        </ol>
+      </div>
+    </div>
+    <div id="description" >
+      <div id="tangleExample">
+        <div id="svg" tangle-area></div>
+      </div>
+      <div id="protocolDescription">
+        <ol>
+          <li>
+            ЙОТА нода может быть превращена в мл хост с набором претренерованных моделей
+          </li>
+          <li>
+            хосты могут объединяться в кластеры
+          </li>
+          <li>
+            потребители запрашивают решение задачи у кластера
+          </li>
+          <li>
+            кластер находит решение и оптимального исполнителя (смарт контракты, акцыон)
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <!-- <div tangle-area style="width: 450px;height: 400px;background: salmon;"> </div> -->
+
+  <script type="text/javascript">
+    (function() {
+      if (SVG.supported) {
+        var elem = document.querySelector('[tangle-area]');
+        createTangle(elem);
+      } else {
+        alert('SVG not supported');
+      }
+    })();
+  </script>
+</body>
+</html>

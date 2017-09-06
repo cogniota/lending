@@ -1,0 +1,104 @@
+body, html {
+  // background: pink;
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  margin:0;
+
+  background-size: cover;
+  background-image: url(6.png);
+  // background-image: url(4.jpg);
+  font-family: 'Rajdhani', sans-serif;
+}
+
+// #fisrt {
+//   display: flex;
+//   background: DARKVIOLET;
+//   flex-direction: column;
+// }
+
+html {
+  // background: linear-gradient(130deg, #a249ab 20%, #6163a0 70%, #00ffd0 100%);
+}
+
+#main {
+  text-align: center;
+  // -apple-system,BlinkMacSystemFont,
+              // Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;
+  // background: MOCCASIN;
+
+  #logo {
+    width: 300px;
+  }
+
+  #concept {
+    // background: KHAKI;
+    ol {
+      margin:0;
+      text-transform: uppercase;
+      // width: 770px;
+      max-width: 800px;
+      line-height: 1.5;
+      // text-align: left;
+      display: inline-block;
+      // background: LEMONCHIFFON;
+      font-size: 34px;
+      color: #fff;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      list-style: none;
+    }
+  }
+}
+
+#description {
+  margin-top: 20px;
+  display: flex;
+  // background: red;
+
+  #tangleExample {
+    width: 50%;
+    box-sizing: border-box;
+    height: 300px;
+    // background: tomato;
+    padding: 10px;
+    padding-right: 30px;
+    text-align: right;
+
+    #svg {
+      // background: pink;
+      // background-image: url(m1.png);
+      width: 500px;
+      height: 300px;
+      display: inline-block;
+    }
+  }
+
+  #protocolDescription {
+    // background: orange;
+    width: 50%;
+
+    ol {
+      width: 500px;
+      line-height: 1.5;
+      font-weight: normal;
+
+      li {
+        font-size: 20px;
+        opacity: 0.3;
+        color: rgba(255, 255, 255, 1);
+
+        strong {
+          color: silver;
+        }
+
+        &.active {
+          font-size: 22px;
+          opacity: 1;
+          color: rgba(255, 255, 255, 1);
+        }
+
+      }
+    }
+  }
+}
