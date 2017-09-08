@@ -57,12 +57,16 @@ MLCloud.prototype.findSolution = function(customer, event) {
   var t1 = 200, d1 = 350, t2 = 180, color = customer.color;
   var _this = this;
 
+  function callback() {
+    customer.receiveResponse(event);
+  }
+
   // function callback() {
     _this.shadow.animate(t1).fill(color);
     _this.hex.fill(color);
     _this.tmp.scale(1).center(0, 0);
     _this.tmp.delay(t1 + d1).once(1, function () {
-     _this.ding(event);
+     _this.ding(callback);
     }).animate(t2).scale(0.01).center(0, 0);
   // }
 

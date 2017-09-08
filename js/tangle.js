@@ -47,37 +47,37 @@ Tangle.prototype.run = function() {
     {name: 'drawTangle', beforeStageT: 100,
      description:
       'It is <strong>IOTA tangle</strong>.',
-     textT: 1900, beforeActionT: 500},
+     textT: 1900, beforeActionT: 530},
 
     {name: 'drawmlHosts', beforeStageT: 1000,
      description:
       'Any IOTA node can be turned into a <strong>machine learning node</strong>.',
-     beforeActionT: 800},
+     beforeActionT: 550},
 
-    {name: 'mlHostsToCluster', beforeStageT: 880,
+    {name: 'mlHostsToCluster', beforeStageT: 800,
      description:
       'Machine Learning nodes create <strong>CognIOTA cluster.</strong>',
      },
     {name: 'mlClusterToCenter', beforeStageT: 100},
 
-    {name: 'drawAgents', beforeStageT: 900,
+    {name: 'drawAgents', beforeStageT: 700,
      description:
       'IOTA nodes <strong>request</strong> machine learing <strong>services</strong> from CognIOTA.',
      },
     {name: 'customerSendRequest', beforeStageT: 150},
 
-    {name: 'findSolution', beforeStageT: 900,
+    {name: 'findSolution', beforeStageT: 680,
      description: 'CognIOTA <strong>finds the solution</strong> for the request.',
     },
 
     {name: 'testProviders', beforeStageT: 550,
-     description: 'It uses <strong>auctions</strong> for finding the best provider',
+     description: 'It uses <strong>auctions</strong> for finding the best task executer.',
      },
 
-    {name: 'providerSendResponse', beforeStageT: 550,
+    {name: 'providerSendResponse', beforeStageT: 700,
      description: 'CognIOTA powers <strong>the economy of IoT</strong>.'},
 
-    {name: 'clear'}
+    {name: 'clear', beforeStageT: 600,}
   ];
 
   chain.forEach(function (method, i) {
@@ -226,9 +226,9 @@ Tangle.prototype.customerSendRequest = function(event) {
 
 Tangle.prototype.findSolution = function(event) {
   var _this = this;
-  this.customer.sendRequest(function () {
+  // this.customer.sendRequest(function () {
     _this.mlCloud.findSolution(_this.customer, event);
-  })
+  // })
 };
 
 Tangle.prototype.testProviders = function(event) {
