@@ -45,7 +45,7 @@ var gridParams = {
 
  var mlNodeCloudParams = {
   // logo
-  logoPath: 'dist/l3.png',
+  logoPath: 'dist/l4.png',
   logoW: 50,
   // main
   r: 30,
