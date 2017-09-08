@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>cognIOTA</title>
+  <title>CognIOTA</title>
+  <details>Machine Learning as a service</details>
 
   <link rel="stylesheet" href="dist/app.css">
 
@@ -28,10 +29,9 @@
   </script>
 </head>
 <body>
-  <div id="first">
+  <div>
     <div id="main" >
-      <img src="dist/11.png"
-           id="logo">
+      <img src="dist/11.png" id="logo">
       <h1>Machine Learning as a service</h1>
     </div>
     <div>
@@ -41,12 +41,12 @@
       </div>
     </div>
   </div>
-  <!-- <div tangle-area style="width: 450px;height: 400px;background: salmon;"> </div> -->
 
   <script type="text/javascript">
     (function() {
       if (SVG.supported) {
         var elem = document.querySelector('[tangle-area]');
+
         createTangle(elem);
       } else {
         alert('SVG not supported');

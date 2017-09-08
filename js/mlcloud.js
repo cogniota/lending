@@ -58,7 +58,10 @@ MLCloud.prototype.findSolution = function(customer, event) {
   var _this = this;
 
   function callback() {
-    customer.receiveResponse(event);
+    customer.receiveResponse(function() {
+      customer.line.toCenter();
+      event()
+    });
   }
 
   // function callback() {

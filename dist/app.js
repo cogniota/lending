@@ -364,47 +364,6 @@ Agent.prototype.receiveResponse = function(event) {
     _this.circle.spinAround(event);
   });
 };
-var chain = [
-{name: 'createSVG', beforeStageT: 10},
-
-{name: 'drawTangle', beforeStageT: 10,
- description: 'This is IOTA tangle',
- textT: 1900, beforeActionT: 500},
-
-{name: 'drawmlHosts', beforeStageT: 1000,
- description: 'Any IOTA node can be turned into a machine learning node.',
- beforeActionT: 800},
-
-{name: 'mlHostsToCluster', beforeStageT: 880,
- description: 'Machine Learning nodes create CognIOTA clusters.',
- },
-{name: 'mlClusterToCenter', beforeStageT: 150},
-
-{name: 'drawAgents', beforeStageT: 900,
- description: 'IOTA nodes request machine learing services from CognIOTA.',
- },
-{name: 'customerSendRequest', beforeStageT: 150},
-
-{name: 'findSolution', beforeStageT: 880,
- description: 'CognIOTA finds the solution for the request',
-},
-
-{name: 'testProviders', beforeStageT: 550,
- description: 'It uses auctions for finding the best provider',
- },
-
-{name: 'providerSendResponse', beforeStageT: 550,
- description: 'CognIOTA creates smartcontracts between customers.'},
-
-{name: 'clear'}
-];
-
-chain.forEach(function (method, i) {
-var nextMethod = chain[i + 1];
-if (!nextMethod) nextMethod = chain[0];
-method.next = nextMethod && [nextMethod.name];
-});
-
 function Graph(draw) {
   this.edgeGroup = draw.group();
   this.vertexesGroup = draw.group();
@@ -509,7 +468,10 @@ MLCloud.prototype.findSolution = function(customer, event) {
   var _this = this;
 
   function callback() {
-    customer.receiveResponse(event);
+    customer.receiveResponse(function() {
+      customer.line.toCenter();
+      event()
+    });
   }
 
   // function callback() {
@@ -835,7 +797,7 @@ Tangle.prototype.showDescription = function(params, event) {
 
 Tangle.prototype.run = function() {
   var chain = [
-    {name: 'createSVG', beforeStageT: 300},
+    {name: 'createSVG', beforeStageT: 600},
 
     {name: 'drawTangle', beforeStageT: 100,
      description:
@@ -868,7 +830,7 @@ Tangle.prototype.run = function() {
      },
 
     {name: 'providerSendResponse', beforeStageT: 700,
-     description: 'CognIOTA powers <strong>the economy of IoT</strong>.'},
+     description: 'CognIOTA powers <br><strong>the economy of IoT</strong>.'},
 
     {name: 'clear', beforeStageT: 600,}
   ];

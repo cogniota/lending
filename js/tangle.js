@@ -42,7 +42,7 @@ Tangle.prototype.showDescription = function(params, event) {
 
 Tangle.prototype.run = function() {
   var chain = [
-    {name: 'createSVG', beforeStageT: 300},
+    {name: 'createSVG', beforeStageT: 600},
 
     {name: 'drawTangle', beforeStageT: 100,
      description:
@@ -75,7 +75,7 @@ Tangle.prototype.run = function() {
      },
 
     {name: 'providerSendResponse', beforeStageT: 700,
-     description: 'CognIOTA powers <strong>the economy of IoT</strong>.'},
+     description: 'CognIOTA powers <br><strong>the economy of IoT</strong>.'},
 
     {name: 'clear', beforeStageT: 600,}
   ];
