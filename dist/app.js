@@ -1,93 +1,445 @@
-// var VERTEXES = [
-//   {index: 1, pos: [25, 25]},
-//   {index: 2, pos: [85, 30]},
-//   {index: 3, pos: [185, 45]},
-//   {index: 4, pos: [325, 30]},
-//   {index: 5, pos: [475, 15]},
+function AgentCircle(draw, vertex, color) {
+  this.color = color;
 
-//   {index: 6, pos: [25, 120]},
-//   {index: 7, pos: [115, 100]},
-//   {index: 8, pos: [250, 120]},
-//   {index: 9, pos: [330, 90]},
-//   {index: 10, pos: [450, 90]},
+  this.r = 21;
+  this.length = this.r * 2 * 3.14;
 
-//   {index: 11, pos: [25, 180]},
-//   {index: 12, pos: [125, 195]},
-//   {index: 13, pos: [175, 160]},
-//   {index: 14, pos: [290, 180]},
-//   {index: 15, pos: [375, 135]},
-//   {index: 16, pos: [450, 195]},
+  this.defParams = {
+    'stroke-dasharray': this.length + ' ' + this.length,
+    'stroke-dashoffset': 0,
+    'fill': this.color,
+    'fill-opacity': 0,
+    'stroke': this.color,
+    'stroke-width': 1,
+  };
+  this.activeParams = {
+    'scale': 1.1,
+    'fill-opacity': 0.3,
+    'stroke-width': 2,
+  };
 
-//   {index: 17, pos: [25, 270]},
-//   {index: 18, pos: [120, 270]},
-//   {index: 19, pos: [190, 275]},
-//   {index: 20, pos: [265, 245]},
-//   {index: 21, pos: [350, 270]},
-// ];
-var VERTEXES = [
-  {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
-  {idx: 2, neightbors: [3, 6], pos: [137, 25], is_ml: true, is_customer: true},
-  {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
-  {idx: 4, neightbors: [5, 8], pos: [361, 25], is_ml: true, is_customer: true},
-  {idx: 5, neightbors: [9, 10], pos: [475, 25]},
+  this.cx = vertex.pos[0];
+  this.cy = vertex.pos[1];
 
-  {idx: 6, neightbors: [11, 12], pos: [25, 108], is_ml: true, main_ml: true},
-  {idx: 7, neightbors: [13], pos: [137, 108]},
-  {idx: 8, neightbors: [9, 13], pos: [255, 108]},
-  {idx: 9, neightbors: [14, 20], pos: [361, 108], is_ml: true, is_customer: true},
-  {idx: 10, neightbors: [15], pos: [475, 108]},
+  this.elem = this.draw(draw);
+}
 
-  {idx: 11, neightbors: [12, 18], pos: [25, 192]},
-  {idx: 12, neightbors: [13, 17, 18], pos: [97, 192], is_customer: true},
-  {idx: 13, neightbors: [14, 19], pos: [170, 192]},
-  {idx: 14, neightbors: [15], pos: [242, 192]},
-  {idx: 15, neightbors: [16], pos: [313, 192]},
-  {idx: 16, neightbors: [20, 21], pos: [475, 192]},
+AgentCircle.prototype.draw = function(draw) {
+  var plot = getCirclePath(this.r);
+  var circle = draw.path(plot).attr(this.defParams).center(this.cx, this.cy);
+  circle.attr({
+    'stroke-dashoffset': this.length + 'px',
+  });
+  return circle;
+};
 
-  {idx: 17, neightbors: [18], pos: [25, 275]},
-  {idx: 18, neightbors: [19], pos: [137, 275], is_ml: true, is_customer: true},
-  {idx: 19, neightbors: [20], pos: [255, 275]},
-  {idx: 20, neightbors: [21], pos: [361, 275]},
-  {idx: 21, neightbors: [], pos: [475, 275], is_ml: true, is_customer: true},
+
+AgentCircle.prototype.show = function() {
+  this.elem.animate(1500, 'circOut').attr(this.defParams);
+};
+
+AgentCircle.prototype.activate = function(callback) {
+  this.elem.animate(200, 'backIn').scale(this.activeParams.scale).attr(this.activeParams);
+};
+
+AgentCircle.prototype.deactivate = function() {
+  this.elem.animate(100, '<').scale(1).attr(this.defParams);
+};
+
+AgentCircle.prototype.colorize = function(color) {
+  this.elem.animate(200).attr({'stroke': color, 'fill': color});
+};
+
+AgentCircle.prototype.spinAround = function(callback, toActive) {
+  var t1 = 250, d = 200;
+  var params = toActive ? this.activeParams : {};
+  this.elem.animate(t1, '>').attr({'stroke-dashoffset': this.length * -1 + 'px'})
+           .delay(d)
+           .animate(t1, '>').attr({'stroke-dashoffset': 0}).attr(params)
+           .once(1, function () {
+              callback && callback();
+           });
+};
+function AgentLine(draw, vertex, color, circle) {
+  this.color = color;
+  this.speed = 60;
+  this.defParams = {
+    'stroke-linecap': "round",
+    'stroke-dasharray': '5 5',
+    'stroke-width': 2,
+    'stroke-dashoffset': 0,
+    'opacity': 0.8,
+    'stroke': this.color,
+  };
+  this.activeParams = {
+    'stroke-width': 4,
+    'opacity': 1,
+  };
+
+  this.sx = vertex.pos[0];
+  this.sy = vertex.pos[1];
+  this.ex = mlNodeCloudParams.cx;
+  this.ey = mlNodeCloudParams.cy;
+
+  this.elem = this.draw(draw);
+}
+
+AgentLine.prototype.array = function() {
+  return [this.sx, this.sy, this.ex, this.ey];
+};
+
+AgentLine.prototype.draw = function(draw) {
+  var line = draw.line(this.sx, this.sy, this.sx, this.sy);
+  line.attr(this.defParams);
+  return line;
+};
+
+AgentLine.prototype.show = function(event) {
+  var d = 500, t = 300;
+  this.elem.delay(d)
+           .animate(t, 'cubicIn').plot(this.sx, this.sy, this.ex, this.ey);
+  var _this = this;
+  setTimeout(function () {
+    _this.toCenter();
+    event && event();
+  }, d + t);
+};
+
+AgentLine.prototype.toCenter = function(attr, i) {
+  // this.lastDirection = 'toCenter';
+  var s = this.elem.attr('stroke-dasharray').split(' ');
+  var d = s.reduce(function(a, b) {return a + parseInt(b);}, 0);
+
+  this.elem.finish().attr({'stroke-dashoffset': 0});
+
+  if (attr) {
+    this.elem.animate(100).attr(attr);
+  }
+  this.elem.animate(d * this.speed).attr({'stroke-dashoffset': d * (i || -1)}).loop();
+};
+
+AgentLine.prototype.fromCenter = function(attr) {
+  // this.lastDirection = 'fromCenter';
+  this.toCenter(attr, 1);
+};
+
+AgentLine.prototype.activate = function() {
+  this.toCenter(this.activeParams);
+};
+
+AgentLine.prototype.deactivate = function() {
+  this.toCenter(this.defParams);
+};
+
+AgentLine.prototype.colorize = function(color) {
+  this.toCenter({'stroke': color});
+};
+function AgentText(draw, positions, r, color) {
+  this.d = 10;
+  this.speed = 15;
+
+  this.r = r;
+  this.color = color;
+
+  this.params = {
+    'fill': this.color
+  };
+
+  this.elem = this.draw(draw, positions);
+}
+
+AgentText.prototype.draw = function(draw, positions) {
+  var x1 = positions[0],
+      y1 = positions[1],
+      x2 = positions[2],
+      y2 = positions[3];
+  var d = this.d * (x1 > x2 ? 1 : -1);
+  var L = SVGIntersections.lengthBetweenTwoPoints(x1, y1, x2, y2);
+  var cosA = (x2 - x1) / L,
+      sinA = (y2 - y1) / L;
+  var dx = d * sinA,
+      dy = d * cosA;
+
+  this.start = [x1 - dx, y1 + dy];
+  this.end = [x2 - dx, y2 + dy];
+
+  this.length = L;
+  this.time = this.length * this.speed;
+
+  // draw.line(new SVG.PointArray([this.start, this.end])).stroke('yellow');
+  var text = draw.plain('').attr(this.params).opacity(0).center(0, 0);
+
+  return text;
+};
+
+AgentText.prototype.colorize = function(color) {
+  this.elem.fill(color);
+};
+
+AgentText.prototype.move = function(params, event) {
+  var d = this.r / this.length;
+  var d1 = this.elem.node.getBBox().width / this.length;
+
+  var eventPos = 1 - d - d1;
+
+  var k = 10 / (d + d1);
+
+  var start = params.toCenter ? this.start : this.end;
+  var end = params.toCenter ? this.end : this.start;
+  this.toCenter = params.toCenter;
+
+  if (this.inLoop) {
+    this.elem.stop();
+  }
+
+  if (params.text) {
+    this.elem.plain(params.text);
+  }
+  if (params.color) {
+    this.elem.fill(params.color);
+  }
+  this.elem.center(start[0], start[1]).opacity(0);
+
+
+  // var n = params.isLoop ? undefined : 1;
+  // this.inLoop = params.isLoop;
+
+  function getOpacity(pos) {
+    if (params.toCenter && pos > d) return 1; //Math.log10(pos * k);
+    if (!params.toCenter && pos < (1 - d)) return 1; //Math.log10((1 - pos) * k);
+    return 0;
+  }
+  this.elem.animate(this.time).center(end[0], end[1])
+           // .loop(n)
+           .during(function(pos, morph, eased, situation) {
+    var o = getOpacity(pos)
+    this.opacity(o);
+    if (event && pos > eventPos) {
+      event();
+      event = undefined;
+    }
+  });
+};
+
+AgentText.prototype.toCenterTimeout = function(event, d) {
+  var shadowTime = d * this.speed,
+      oneBodyTime = this.elem.node.getBBox().width * this.speed;
+
+  var t = this.time - shadowTime - oneBodyTime;
+  var _this = this;
+  setTimeout(function () {
+    event(_this.time);
+  }, t);
+};
+
+AgentText.prototype.sendRequest = function(event, d) {
+  this.move({isLoop: true, toCenter: true, text: '?'}, event);
+
+  // this.toCenterTimeout(event, d, true);
+};
+
+// AgentText.prototype.stopRequest = function(callback, d) {
+//   var x = this.end[0] - d;
+//   var y = this.end[1] - d;
+
+//   var end = this.end, start = this.start;
+
+//   function isSent(animations) {
+//     var x = animations.cx[0].value;
+//     var y = animations.cy[0].value;
+
+//     if (end[0] > start[0] && x < (end[0] - d)) return false;
+//     if (end[1] > start[1] && y < (end[1] - d)) return false;
+//     if (end[0] < start[0] && x > (end[0] + d)) return false;
+//     if (end[1] < start[1] && y > (end[1] + d)) return false;
+
+//     return true;
+//   }
+
+//   while (!isSent(this.elem.fx.situation.animations)) {
+//     // white
+//   }
+
+//   this.elem.finish().hide();
+//   this.elem.inLoop = false;
+//   callback();
+// };
+
+AgentText.prototype.receiveRequest = function(event) {
+  this.move({text: '?'}, event);
+};
+
+AgentText.prototype.sendResponse = function(event, d) {
+  this.move({toCenter: true, text: '!'}, event);
+
+  // this.toCenterTimeout(event, d);
+};
+
+AgentText.prototype.receiveResponse = function(event) {
+  this.move({text: '!'}, event);
+};
+ function Agent(draw, vertex, color, event, mlCloud) {
+  this.vertex = Object.assign({}, vertex);
+  this.mlCloud = mlCloud;
+
+  this.color = color;
+
+  this.group = draw.group();
+  this.circle = new AgentCircle(this.group, vertex, color);
+  this.circle.show();
+
+  this.line = new AgentLine(this.group, vertex, color);
+  this.line.show(event);
+
+  this.text = new AgentText(this.group, this.line.array(), this.circle.r, color);
+}
+
+Agent.prototype.activate = function() {
+  this.circle.activate();
+  this.line.activate();
+};
+
+Agent.prototype.deactivate = function() {
+  this.circle.deactivate();
+  this.line.deactivate();
+  this.text.colorize(this.color);
+};
+
+////////
+
+Agent.prototype.sendRequest = function(event, animateCircle) {
+  var _this = this;
+  var distance = this.mlCloud.shadow.width() * 0.5;
+  if (animateCircle) {
+    this.circle.spinAround(function () {
+      _this.line.activate();
+      _this.text.sendRequest(event, distance);
+    }, true);
+  } else {
+    this.text.sendRequest(event, distance);
+  }
+};
+
+
+Agent.prototype.stopRequest = function(callback) {
+  var distance = this.mlCloud.hex.width() * 0.5;
+  this.text.stopRequest(callback);
+};
+
+// Agent.prototype.startContract = function(color) {
+//   this.circle.colorize(color);
+//   this.line.colorize(color);
+//   this.text.colorize(color);
+// };
+
+Agent.prototype.receiveRequest = function(color, event) {
+  var _this = this;
+
+  setTimeout(function () {
+    _this.circle.colorize(color);
+    _this.line.colorize(color);
+    _this.text.colorize(color);
+
+    _this.text.receiveRequest(event);
+    _this.line.fromCenter();
+  }, 570);
+};
+
+Agent.prototype.sendResponse = function(event) {
+  var _this = this;
+
+  function callback () {
+    _this.line.toCenter();
+    _this.text.sendResponse(event, distance);
+  }
+
+  var distance = this.mlCloud.shadow.width() * 0.5;
+  this.circle.spinAround(callback);
+};
+
+Agent.prototype.receiveResponse = function(event) {
+  this.line.fromCenter();
+  var _this = this;
+  this.text.receiveResponse(function () {
+    _this.circle.spinAround(event);
+  });
+};
+var chain = [
+{name: 'createSVG', beforeStageT: 10},
+
+{name: 'drawTangle', beforeStageT: 10,
+ description: 'This is IOTA tangle',
+ textT: 1900, beforeActionT: 500},
+
+{name: 'drawmlHosts', beforeStageT: 1000,
+ description: 'Any IOTA node can be turned into a machine learning node.',
+ beforeActionT: 800},
+
+{name: 'mlHostsToCluster', beforeStageT: 880,
+ description: 'Machine Learning nodes create CognIOTA clusters.',
+ },
+{name: 'mlClusterToCenter', beforeStageT: 150},
+
+{name: 'drawAgents', beforeStageT: 900,
+ description: 'IOTA nodes request machine learing services from CognIOTA.',
+ },
+{name: 'customerSendRequest', beforeStageT: 150},
+
+{name: 'findSolution', beforeStageT: 880,
+ description: 'CognIOTA finds the solution for the request',
+},
+
+{name: 'testProviders', beforeStageT: 550,
+ description: 'It uses auctions for finding the best provider',
+ },
+
+{name: 'providerSendResponse', beforeStageT: 550,
+ description: 'CognIOTA creates smartcontracts between customers.'},
+
+{name: 'clear'}
 ];
 
-function Graph(draw, bound, r) {
+chain.forEach(function (method, i) {
+var nextMethod = chain[i + 1];
+if (!nextMethod) nextMethod = chain[0];
+method.next = nextMethod && [nextMethod.name];
+});
+
+function Graph(draw) {
   this.edgeGroup = draw.group();
-  this.vertexesDefGroup = draw.group();
   this.vertexesGroup = draw.group();
 
-  this.vertexesList = VERTEXES;
-  this.vertexes = this.vertexesList.reduce(function (bucket, v) {
+  this.vertexes = VERTEXES.reduce(function (bucket, v) {
     bucket[v.idx] = v;
     return bucket;
   }, {});
 
-  var color = '#14753d';
-  // var color = '#165749';
-
-  for (var idx in this.vertexes) {
-    var vertex = this.vertexes[idx];
-    vertex.pos[0] = Random.deviate(vertex.pos[0], 15);
-    vertex.pos[1] = Random.deviate(vertex.pos[1], 15);
-
-    var defPath = getCirclePath(12);
-    vertex.defNode = this.vertexesDefGroup.path(defPath).fill(color).center(vertex.pos[0], vertex.pos[1]);
-  }
-
-  for (var idx in this.vertexes) {
-    var vertex = this.vertexes[idx];
-    for (var i = 0; i < vertex.neightbors.length; i++) {
-      var neightborIdx = vertex.neightbors[i];
-      if (neightborIdx > idx) {
-        var neightbor = this.vertexes[neightborIdx];
-        var arr = new SVG.PointArray([vertex.pos, neightbor.pos]);
-        var edge = this.edgeGroup.line(arr).stroke({color: color});
-      }
-    }
-  }
+  this.createVertexes();
 }
 
+Graph.prototype.createVertexes = function() {
+  var _this = this;
+  VERTEXES.forEach(function (vertex) {
+    _this.createVertex(vertex);
+  });
+};
 
+Graph.prototype.createVertex = function(vertex) {
+  var _this = this;
+
+  var path = getCirclePath(gridParams.r);
+  var gridNode = this.vertexesGroup.path(path);
+  gridNode.fill(gridParams.color).center(vertex.pos[0], vertex.pos[1]);
+
+
+  vertex.neightbors.forEach(function (neightborId) {
+    var neightbor = _this.vertexes[neightborId];
+    _this.edgeGroup.line(new SVG.PointArray([vertex.pos, neightbor.pos]))
+                   .attr({
+                      'stroke': gridParams.color
+                    });
+  });
+};
 function getCirclePath(r) {
   var a = r / 4, b = a * 2, c = a * 3;
   return 'M' + b + ' 0 ' +
@@ -97,435 +449,253 @@ function getCirclePath(r) {
          'C0 ' + a + ' ' + a + ' 0 ' + b + ' 0 Z';
 };
 
-function getCircle3QPath(r) {
-  var a = r / 4, b = a * 2, c = a * 3;
-  return 'M' + b + ' 0 ' +
-         'C' + c + ' 0 ' + r + ' ' + a + ' ' + r + ' ' + b + ' ' +
-         'C' + r + ' ' + c + ' ' + c + ' ' + r + ' ' + b + ' ' + r + ' ' +
-         'C' + a + ' ' + r + ' 0 ' + c + ' 0 ' + b + ' ';
-};
+function MLCloud(draw) {
+  this.group = draw.group();
+  this.group.backward();
 
+  this.params = Object.assign({}, mlNodeCloudParams);
+  this.cx = this.params.cx;
+  this.cy = this.params.cy;
 
-function getCircleHPath(r) {
-  var a = r / 4, b = a * 2, c = a * 3;
-  return 'M' + b + ' 0 ' +
-         'C' + c + ' 0 ' + r + ' ' + a + ' ' + r + ' ' + b + ' ' +
-         'C' + r + ' ' + c + ' ' + c + ' ' + r + ' ' + b + ' ' + r + ' ';
-};
+  this.group.opacity(0).center(this.cx, this.cy);
 
-function getCircleQPath(r) {
-  var a = r / 4, b = a * 2, c = a * 3;
-  return 'M' + b + ' 0 ' +
-         'C' + c + ' 0 ' + r + ' ' + a + ' ' + r + ' ' + b + ' ';
-};
+  this.shadow = this.drawShadow();
+  this.hex = this.drawHex();
 
+  this.tmp = this.drawHex().scale(0.01).center(0, 0);
 
-function getHexPath(s) { //side
-  var a = r * 0.86602, b = a / 2, c = a + b, d = a * -1, e = b * -1, f = r * -1;
-  // return 'M ' + c + ' 0' +
-  //       ' l ' + a + ' ' + b +
-  //       ' v ' + r +
-  //       ' l ' + d + ' ' + b +
-  //       ' l ' + d + ' ' + e +
-  //       ' v ' + f + ' z';
-  return 'M 0 0 l 86.602 50 v 100 l -86.602 50 l -86.603 -50 v -100 z'
+  this.logo = this.drawLogo();
 }
 
-
-
-function getOxoPath(s) { //side
-  var a = s * 2, b = s /2, c = s * -1, d = b * -1;
-  return 'M ' + a + ' ' + 0 +
-        ' h ' + s +
-        ' l ' + b + ' ' + b +
-        ' v ' + s +
-        ' l ' + d + ' ' + b +
-        ' h ' + c +
-        ' l ' + d + ' ' + d +
-        ' v ' + c + ' z';
-}
-
-
-// 30 51.96152422706631
-// 100 0.86602
-
-var mlcolor = '#00fff5';
-var mlCenter = [250, 150];
-var qSpeed = 20;
-var qStrokeSpeed = 60;
-
-var defStroke = {
-  'stroke-linecap': "round",
-  'stroke-dasharray': "5,5",
-  'stroke-width': 2
-}
-var requestStroke = {
-  // 'stroke-linecap': "round",
-  // 'stroke-dasharray': "5,10",
-  'stroke-width': 4
-};
-var responseStroke = {
-  // 'stroke-linecap': "butt",
-  // 'stroke-dasharray': "20,5",
-  'stroke-width': 4
-};
-var colors = [
-  'rgb(255, 191, 0)',  // orange
-  'rgb(0, 255, 191)', // blue
-  'rgb(191, 255, 0)', // yellow
-  'rgb(75, 255, 0)',  // green
-  'rgb(255, 64, 255)', // purple
-  'rgb(255, 0, 106)',  // red
-];
-
-
-function sumOfString(s) {
-  return s.split(',').reduce(function(a, b) {return a+parseInt(b)}, 0);
-}
-
-
-function VertexNode(draw, vertex) {
-  this.params = vertex;
-  this.draw = draw;
-
-  this.group = vertex.node = draw.group();
-
-  this.group.center(vertex.pos[0], vertex.pos[1]);
-  // this.group.text(this.params.idx + '');
-
-
-  this.customerR = 21;
-  this.d = this.customerR * 2 * 3.14;
-  this.customerPath = getCirclePath(this.customerR);
-
-  var endPos = mlCenter.slice();
-  endPos[0] = endPos[0] - this.customerR;
-  endPos[1] = endPos[1] - this.customerR;
-  var startPos = this._getQLineStart(endPos);
-  this.s = this._getQSpeed(startPos, endPos);
-  this._setQdmove(startPos, endPos);
-}
-
-VertexNode.prototype.destroy = function() {
-  var _this = this;
-  this.destructible.forEach(function (elemName) {
-    _this[elemName].remove && _this[elemName].remove();
-    _this[elemName] = undefined;
+MLCloud.prototype.drawShadow = function() {
+  var shadow = this.group.polygon().ngon({
+    radius: this.params.r * this.params.shadowK,
+    edges: this.params.edges
   });
-  this.destructible = [];
-
-  _this.group.opacity(1).scale(1).center(_this.params.pos[0], _this.params.pos[1]);
+  shadow.fill(this.params.color).opacity(this.params.shadowOpacity);
+  shadow.center(0, 0);
+  return shadow;
 };
 
-
-VertexNode.prototype.activateML = function(neightbors, lineGroup) {
-  var c = 0, r = 15;
-
-  this.shadow = this.group.polygon().ngon({radius: r * 1.3, edges: 6})
-                    .fill(mlcolor).center(c, c).opacity(0.3).scale(0.1);
-  this.shadow.delay(200)
-             .animate(300, 'backOut').scale(1).center(c, c).opacity(0.3);
-
-  this.path = this.group.polygon().ngon({radius: 0.1, edges: 3})
-                  .fill(mlcolor).center(c, c);
-  this.path.animate(100).ngon({radius: r, edges: 3}).center(c, c)
-           .animate(100).ngon({radius: r, edges: 4}).center(c, c)
-           .animate(100).ngon({radius: r, edges: 5}).center(c, c)
-           .animate(100).ngon({radius: r, edges: 6}).center(c, c);
-};
-
-
-VertexNode.prototype.toCloud = function() {
-  var cx = 25, cy = 22;
-  var _this = this;
-
-  this.shadow.animate(250, '<>').ngon({radius: 42, edges: 8})
-  this.path.animate(250, '<>').ngon({radius: 30, edges: 8}).center(cx, cy)
-
-  this.group.animate(250, 'backIn').center(mlCenter[0], mlCenter[1]);
-
-  if (this.params.main_ml) {
-    setTimeout(function () {
-      _this.logo = _this.group.image('dist/l2.png', 50, 50).center(cx, cy);
-    }, 250);
-  } else {
-    this.group.animate(500).scale(1.5).opacity(0).center(250, 150);
-  }
-};
-
-
-VertexNode.prototype._getQLineStart = function(endPos) {
-  var tmpLine = this.draw.line(new SVG.PointArray([this.params.pos, endPos]));
-  var tmpPath = this.draw.path(this.customerPath).center(this.params.pos[0], this.params.pos[1])
-  var intersectPoint = tmpPath.intersectsLine(tmpLine)[0];
-  var startPos = [intersectPoint.x, intersectPoint.y];
-  tmpLine.remove();
-  tmpPath.remove();
-
-  return startPos;
-};
-
-VertexNode.prototype._setQdmove = function(startPos, endPos) {
-  var dy = 0, dx = 0;
-  if (this.params.idx == 2) {
-    dx += 12;
-  }
-  else if (this.params.idx == 4) {
-    dx -= 14;
-    dy -= 2
-  }
-  else if (this.params.idx == 9) {
-    dx -= 5;
-    dy -= 10;
-  }
-  else if (this.params.idx == 12) {
-    dx += 0;
-    dy -= 11;
-  }
-  else if (this.params.idx == 18) {
-    dx -= 5;
-    dy -= 10;
-  }
-  else if (this.params.idx == 21) {
-    dx -= 4;
-    dy -= 14;
-  }
-
-
-  this.startPos = startPos;
-  this.endPos = endPos;
-  this.qtextStart = [startPos[0] + dx, startPos[1] + dy];
-  this.qtextEnd = [endPos[0] + dx, endPos[1] + dy];
-  this.qdmove = [dx, dy];
-};
-
-VertexNode.prototype._getQSpeed = function(startPos, endPos) {
-  var l = SVGIntersections.lengthBetweenTwoPoints(startPos[0], startPos[1], endPos[0], endPos[1]);
-  return l * qSpeed;
-};
-
-VertexNode.prototype._createQline = function(startPos, endPos) {
-  var arr = new SVG.PointArray([startPos, startPos]);
-  var qline = this.qlineGroup.line(arr);
-  qline.attr({'stroke': this.color, 'stroke-dashoffset': 0});
-  qline.attr(defStroke);
-
-  arr.value[1] = endPos;
-
-  qline.delay(500).animate(300, 'cubicIn').plot(arr);
-
-  return qline;
-};
-
-VertexNode.prototype.activateBuyer = function(color) {
-  this.color = color;
-
-  this.path = this.group.path(this.customerPath).center(0, 0).attr({
-    'stroke-dasharray': this.d + ' ' + this.d,
-    'stroke-dashoffset': this.d + 'px',
-    'fill': this.color,
-    'fill-opacity': 0,
-    'stroke': this.color,
-    'stroke-width': 1
+MLCloud.prototype.drawHex = function() {
+  var hex = this.group.polygon().ngon({
+    radius: this.params.r,
+    edges: this.params.edges
   });
-  this.path.animate(1500, '>').attr({'stroke-dashoffset': 0});
-
-  this.qlineGroup = this.draw.group();
-  this.qlineGroup.back();
-
-  this.qtext = this.qlineGroup.plain('?').fill(this.color).hide();
-
-  this.qline = this._createQline(this.startPos, this.endPos);
-  this.lineToCenter(null, null, true);
+  hex.fill(this.params.color).center(0, 0);
+  return hex;
 };
 
-
-VertexNode.prototype.lineToCenter = function(attr, i, skipFinish) {
-  var i = i || -1;
-  var s = attr && attr['stroke-dasharray'] || this.qline.attr('stroke-dasharray');
-  var d = sumOfString(s);
-
-  if (!skipFinish) {
-    this.qline.finish();
-  }
-  if (attr) {
-    this.qline.attr({'stroke-dashoffset': 0}).animate(attr['t']).attr(attr);
-  }
-  this.qline.animate(d * qStrokeSpeed).attr({'stroke-dashoffset': d * i}).loop();
+MLCloud.prototype.drawLogo = function() {
+  var logo = this.group.image(this.params.logoPath, this.params.logoW, this.params.logoW);
+  logo.center(0, 0);
+  return logo;
 };
 
-VertexNode.prototype.lineFromCenter = function(attr) {
-  this.lineToCenter(attr, 1);
+MLCloud.prototype.show = function(event) {
+  this.group.opacity(1).forward();
 };
 
-VertexNode.prototype.sendRequest = function() {
-  this.activateAgent(requestStroke);
-  // this.lineToCenter(requestStroke);
-
-  var _this = this;
-  this.qtext.plain('?').center(this.qtextStart[0], this.qtextStart[1]);
+MLCloud.prototype.ding = function(event, reversed) {
+  var t = 300;
+  this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
   setTimeout(function () {
-    _this.qtext.show()
-               .animate(_this.s, '>').center(_this.qtextEnd[0], _this.qtextEnd[1]).loop();
-  }, 400);
+    event();
+  }, t * 2);
 };
 
-VertexNode.prototype.recolor = function(color, lineFn) {
-  this[lineFn]({'stroke': color});
-  this.qtext.animate(100).fill(color);
-  this.path.animate().attr({'stroke': color, 'fill': color});
-};
-
-VertexNode.prototype.receiveRequest = function(main, customer) {
+MLCloud.prototype.findSolution = function(customer, event) {
+  var t1 = 200, d1 = 350, t2 = 180, color = customer.color;
   var _this = this;
-  var params = Object.assign({}, requestStroke);
-  this.lineFromCenter(params);
 
-  this.qtext.show().plain('?')
-            .center(this.qtextEnd[0], this.qtextEnd[1]);
-  this.recolor(customer.color, 'lineFromCenter');
+  // function callback() {
+    _this.shadow.animate(t1).fill(color);
+    _this.hex.fill(color);
+    _this.tmp.scale(1).center(0, 0);
+    _this.tmp.delay(t1 + d1).once(1, function () {
+     _this.ding(event);
+    }).animate(t2).scale(0.01).center(0, 0);
+  // }
 
-  customer.stopRequest();
+  // customer.stopRequest(callback);
 
-  var oneBodyTime = this.qtext.node.getBBox().width * qSpeed;
-  this.qtext.animate(this.s, '>').center(this.qtextStart[0], this.qtextStart[1]);
-  setTimeout(function () {
-    _this.qtext.hide();
-  }, this.s - oneBodyTime);
+};
 
-  this.spinAround(function () {
-    _this.sendResponse(main, customer);
+MLCloud.prototype.fallOutColor = function(event) {
+  var d1 = 420, t1 = 150, d2 = 200, t2 = 70;
+
+  var _this = this, color = this.params.color;
+  this.tmp.delay(d1).fill(color).animate(t1).scale(1).center(0, 0);
+  this.shadow.delay(d1 + t1 + d2).animate(t2).fill(color).once(1, function () {
+    _this.tmp.fill(color).scale(0.01).center(0, 0);
+    _this.hex.fill(color);
+    event();
   });
-
 };
 
-
-VertexNode.prototype.stopRequest = function() {
-  this.qtext.stop().hide();
+MLCloud.prototype.testProvider = function(color) {
+  this.shadow.animate(200, '>').fill(color).opacity(0.6);
+  this.shadow.delay(100).animate(200).opacity(this.params.shadowOpacity);
+  // this.hex.animate(200).fill(color).loop(2, true);
 };
 
-VertexNode.prototype.spinAround = function(callback) {
-  if (this.params.main_ml) {
-    var reversed = callback ? 1 : -1;
-    this.group.animate(300, 'expoIn').rotate(140 * reversed).loop(2, true);
-  } else {
-    var _this = this;
-    var oneBodyTime = this.qtext.node.getBBox().width * qSpeed;
-    var t = this.s - oneBodyTime, t1 = 400, t2 = 400;
-    this.path.delay(t);
-    this.path.animate(t1, '>').attr({'stroke-dashoffset': this.d * -1 + 'px'});
-    this.path.animate(t2, '>').attr({'stroke-dashoffset': this.d * -2 + 'px'});
-    setTimeout(function () {
-      _this.path.attr({'stroke-dashoffset': 0});
-      callback();
-    }, t + t1 + t2);
+MLCloud.prototype.chooseProvider = function(color, event) {
+  this.shadow.animate(100).fill(color);
+
+  this.ding(function(){});
+};
+
+MLCloud.prototype.receiveResponse = function(event) {
+  var _this = this;
+  this.ding(function() {
+    _this.fallOutColor(event);
+  }, true);
+};
+
+function MLNode(draw, vertex, event) {
+  this.hexParams = {
+    'radius': 15,
+    'edges': 6,
+    'edgesStart': 3,
+    // 'fill': '#00fff5',
+    'fill': '#00d6ff',
+  };
+  this.shadowParams = {
+    'radius': this.hexParams.radius * 1.3,
+    'edges': this.hexParams.edges,
+    'fill': this.hexParams.fill,
+    'opacity': 0.3,
+  };
+  this.lineParams = {
+    'stroke': this.hexParams.fill,
+    'stroke-width': 1.5,
+    'opacity': 0.7
+  };
+
+
+  this.vertex = Object.assign({}, vertex);
+  var neightborsIdxs = this.vertex.neightbors;
+  this.neightborsVertexes = VERTEXES.reduce(function (bucket, v) {
+    if (neightborsIdxs.indexOf(v.idx) > -1) {
+      bucket.push(Object.assign({}, v));
+    }
+    return bucket;
+  }, []);
+
+  this.group = draw.group();
+
+  this.cx = this.vertex.pos[0];
+  this.cy = this.vertex.pos[1];
+
+  this.shadow = this.drawShadow();
+  this.hex = this.drawHex();
+
+  this.show(event);
+}
+
+MLNode.prototype.drawShadow = function() {
+  var params = {edges: this.shadowParams.edges, radius: 0.1};
+  var shadow = this.group.polygon().ngon(params);
+  shadow.attr(this.shadowParams).center(this.cx, this.cy);
+  return shadow;
+};
+
+MLNode.prototype.drawHex = function() {
+  var params = {edges: this.hexParams.edgesStart, radius: 0.1};
+  var hex = this.group.polygon().ngon(params);
+  hex.attr(this.hexParams).fill(gridParams.color).center(this.cx, this.cy);
+  return hex;
+};
+
+MLNode.prototype.show = function(event) {
+  var hexT = 100,
+      hexTotalT = ((this.hexParams.edges + 1) - this.hexParams.edgesStart) * hexT;
+  var shadowDelayAfter = 100,
+      shadowT = 300,
+      shadowDelayBefore = hexTotalT + shadowDelayAfter - shadowT;
+
+  this.shadow.delay(shadowDelayBefore);
+
+  var ngonParams = {edges: this.hexParams.edges, radius: this.hexParams.radius};
+  for (var i = this.hexParams.edgesStart; i <= this.hexParams.edges; i++) {
+    ngonParams.edges = i;
+    this.hex.animate(hexT).ngon(ngonParams).center(this.cx, this.cy)
+                          .fill(i > 4 ? this.hexParams.fill : gridParams.color);
   }
+
+  this.shadow.animate(shadowT, 'backOut').attr(this.shadowParams)
+                                         .ngon(this.shadowParams)
+                                         .center(this.cx, this.cy)
+             .once(1, function () {event && event(); });
 };
 
+MLNode.prototype.connectToOther = function(nodes, event) {
+  this.lineGroup = this.group.group();
 
-VertexNode.prototype.receiveResponse = function() {
+  var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
+
   var _this = this;
-  this.lineFromCenter(responseStroke);
+  var raised = false;
+  function createLine(s, e) {
+    var l = _this.lineGroup.line(new SVG.PointArray([s, s]));
+    l.attr(_this.lineParams).opacity(0.3);
 
-  this.qtext.stop().show().plain('!')
-            .center(this.qtextEnd[0], this.qtextEnd[1])
-            .animate(this.s, '>').center(this.qtextStart[0], this.qtextStart[1]);
+    var middle = [
+      s[0] - ((s[0] - e[0]) / 2),
+      s[1] - ((s[1] - e[1]) / 2)
+    ];
+    l.animate(t1, 'sineOut').plot(new SVG.PointArray([s, middle]));
 
-  setTimeout(function () {
-    _this.stopRequest();
-  }, this.s);
-
-  this.spinAround(function () {
-      _this.deactivateAgent();
-  });
-
-};
-
-VertexNode.prototype.sendResponse = function(main, customer) {
-  var _this = this;
-  customer.stopRequest();
-  this.lineToCenter(responseStroke);
-  this.qtext.stop().show().plain('!')
-            .center(this.qtextStart[0], this.qtextStart[1])
-            .animate(this.s, '>').center(this.qtextEnd[0], this.qtextEnd[1]);
-
-  setTimeout(function () {
-    _this.deactivateAgent();
-    main.spinAround(true);
-    customer.receiveResponse();
-  }, this.s);
-};
-
-
-VertexNode.prototype.deactivateAgent = function() {
-  this.path.animate(300).scale(1)
-                        .attr({
-                          'fill-opacity': 0,
-                          'fill': this.color,
-                          'stroke-width': 1,
-                          'stroke': this.color
-                        });
-  this.qtext.fill(this.color);
-  var params = Object.assign({}, defStroke);
-  params['stroke'] = this.color;
-  this.lineToCenter(params);
-};
-
-VertexNode.prototype.activateAgent = function(params) {
-  params = Object.assign({}, params || {});
-  params.t = 300;
-
-  this.path.animate(300, '>').scale(1.1)
-                             .attr({
-                              'fill-opacity': 0.3,
-                              'stroke-width': 2
-                            });
-  this.lineToCenter(params);
-};
-
-VertexNode.prototype.findProvider = function(customer, providers) {
-  var _this = this;
-
-  var pathTime = this.path.width() * qSpeed,
-      at = 100;
-
-  this.shadow.animate(at).fill(customer.color);
-  this.path.animate(at).fill(customer.color);
-
-  var t = at, tstep = 500;
-
-  providers.forEach(function (node, i) {
-    t += tstep;
-
-    setTimeout(function () {
-      _this.shadow.stop().animate(70).fill(node.color);
-      _this.path.stop().animate(70).fill(node.color);
-
-      node.activateAgent();
-
-      if (i > 0) {
-        var prev = providers[i - 1];
-        prev.deactivateAgent();
+    l.delay(d1).animate(t2, 'sineOut').attr({'opacity': 1});
+    l.animate(t3, 'sineIn').attr(_this.lineParams)
+     .once(1, function () {
+      // animations are simultaneous so there is no need to check which is the last
+      if (event && raised === false) {
+        raised = true;
+        event();
       }
+     });
+  }
 
-      if (i == providers.length - 1) {
-        var diff = t % customer.s - pathTime;
-        setTimeout(function () {
-          _this.chooseProvider(customer, node, tstep);
-        }, diff);
-      }
-
-    }, t);
+  nodes.forEach(function (node, i) {
+    if (node.vertex.idx != _this.vertex.idx) {
+      createLine(_this.vertex.pos, node.vertex.pos);
+      createLine(node.vertex.pos, _this.vertex.pos);
+    }
   });
 };
 
-VertexNode.prototype.chooseProvider = function(customer, provider, tstep) {
-  this.spinAround();
-  this.shadow.delay(tstep).animate(70).fill(mlcolor);
-  this.path.delay(tstep).animate(70).fill(mlcolor);
+MLNode.prototype.moveToCenter = function(showCloud, event) {
+  this.lineGroup.animate(100).opacity(0);
 
-  // customer.stopRequest();
-  provider.receiveRequest(this, customer);
+  var cloudParams = Object.assign({}, mlNodeCloudParams);
+  var dx = cloudParams.cx - this.cx;
+  var dy = cloudParams.cy - this.cy;
+  var t1 = 250, t2 = 500;
+
+  var _this = this;
+  function move(elem, params) {
+    elem.animate(t1, '<>').ngon(ngonParams).center(_this.cx, _this.cy).once(1, function () {
+      if (showCloud) {
+        showCloud();
+        showCloud = undefined;
+      }
+    });
+    elem.animate(t2, '>').scale(1.5).opacity(0).center(_this.cx, _this.cy).once(1, function () {
+      if (event) {
+        event();
+        event = undefined;
+      }
+    });;
+  }
+
+  var ngonParams = {radius: cloudParams.r, edges: cloudParams.edges};
+  move(this.hex, ngonParams);
+
+  ngonParams.radius = cloudParams.r * cloudParams.shadowK;
+  move(this.shadow, ngonParams);
+
+  this.group.animate(t1, 'backIn').dmove(dx, dy);
 };
 var Random = {
   range: function range(min, max) {
@@ -557,207 +727,364 @@ var Random = {
   }
 };
 
+var VERTEXES = [
+  {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
+  {idx: 2, neightbors: [3, 6], pos: [137, 25]},
+  {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
+  {idx: 4, neightbors: [5, 8], pos: [361, 25]},
+  {idx: 5, neightbors: [9, 10], pos: [475, 25]},
+
+  {idx: 6, neightbors: [11, 12], pos: [25, 108]},
+  {idx: 7, neightbors: [13], pos: [137, 108]},
+  {idx: 8, neightbors: [9, 13], pos: [255, 108]},
+  {idx: 9, neightbors: [14, 20], pos: [361, 108]},
+  {idx: 10, neightbors: [15], pos: [475, 108]},
+
+  {idx: 11, neightbors: [12, 18], pos: [25, 192]},
+  {idx: 12, neightbors: [13, 17, 18], pos: [97, 192]},
+  {idx: 13, neightbors: [14, 19], pos: [170, 192]},
+  {idx: 14, neightbors: [15], pos: [242, 192]},
+  {idx: 15, neightbors: [16], pos: [413, 192]},
+  {idx: 16, neightbors: [20, 21], pos: [475, 192]},
+
+  {idx: 17, neightbors: [18], pos: [25, 275]},
+  {idx: 18, neightbors: [19], pos: [137, 275]},
+  {idx: 19, neightbors: [20], pos: [255, 275]},
+  {idx: 20, neightbors: [21], pos: [361, 275]},
+  {idx: 21, neightbors: [], pos: [475, 275]},
+];
 
 
-var maxR = 20;
+var mlHosts = [2, 4, 6, 9, 18, 21];
+var agentHosts = [2, 4, 9, 12, 18, 21];
 
+var agentsColors = [
+  'rgb(255, 191, 0)',  // orange
+  'rgb(0, 255, 191)', // blue
+  'rgb(191, 255, 0)', // yellow
+  'rgb(75, 255, 0)',  // green
+  'rgb(255, 64, 255)', // purple
+  'rgb(255, 0, 106)',  // red
+];
+
+var gridParams = {
+  r: 12,
+  color: '#2c9b5a',
+};
+
+ var mlNodeCloudParams = {
+  // logo
+  logoPath: 'dist/l3.png',
+  logoW: 50,
+  // main
+  r: 30,
+  // color: '#00fff5',
+  color: '#00d6ff',
+  edges: 8,
+  cx: 250,
+  cy: 150,
+  // shadow
+  shadowK: 1.3,
+  shadowOpacity: 0.3,
+};
 function createTangle(parent) {
-  var svg = document.createElement('svg');
-  var svgId = 'svg-' + document.getElementsByTagName('div').length;
-  svg.setAttribute('id', svgId);
-  parent.appendChild(svg);
-
   var bounds = parent.getBoundingClientRect();
+  var svgId = parent.getAttribute('id');
   var tangle = new Tangle(svgId, bounds);
 }
-
 
 function Tangle(svgId, bounds) {
   this.svgId = svgId;
   this.bounds = bounds;
 
-  this.createSVG();
+  this.description = document.querySelector('#protocolDescription');
+
+  this.run();
 }
 
-
-Tangle.prototype.setTimeout = function(method, t) {
+Tangle.prototype.showDescription = function(params, event) {
   var _this = this;
+
+  function show(text){
+    if (text) {
+      _this.draw.addClass('overflowed');
+      _this.description.innerHTML = text;
+      _this.description.className = 'active';
+    } else {
+      _this.draw.removeClass('overflowed');
+      _this.description.innerHTML = '';
+      _this.description.className = '';
+    }
+  }
+
+  show(params.description);
+
   setTimeout(function () {
-    _this[method]();
-  }, t);
+    show();
+
+    setTimeout(function () {
+      _this[params.name](event);
+    }, params.beforeActionT || 1450);
+
+  }, params.textT || 3300);
 };
 
-Tangle.prototype.highlightDes = function(idx) {
-  this.descriptionList.forEach(function (li, n) {
-    if (n == idx) {
-      li.className = 'active';
-    } else {
-      li.className = '';
+Tangle.prototype.run = function() {
+  var chain = [
+    {name: 'createSVG', beforeStageT: 200},
+
+    {name: 'drawTangle', beforeStageT: 100,
+     description: 'This is IOTA tangle',
+     textT: 1900, beforeActionT: 500},
+
+    {name: 'drawmlHosts', beforeStageT: 1000,
+     description: 'Any IOTA node can be turned into a machine learning node.',
+     beforeActionT: 800},
+
+    {name: 'mlHostsToCluster', beforeStageT: 880,
+     description: 'Machine Learning nodes create CognIOTA clusters.',
+     },
+    {name: 'mlClusterToCenter', beforeStageT: 150},
+
+    {name: 'drawAgents', beforeStageT: 900,
+     description: 'IOTA nodes request machine learing services from CognIOTA.',
+     },
+    {name: 'customerSendRequest', beforeStageT: 150},
+
+    {name: 'findSolution', beforeStageT: 880,
+     description: 'CognIOTA finds the solution for the request',
+    },
+
+    {name: 'testProviders', beforeStageT: 550,
+     description: 'It uses auctions for finding the best provider',
+     },
+
+    {name: 'providerSendResponse', beforeStageT: 550,
+     description: 'CognIOTA creates smartcontracts between customers.'},
+
+    {name: 'clear'}
+  ];
+
+  chain.forEach(function (method, i) {
+    var nextMethod = chain[i + 1];
+    if (!nextMethod) nextMethod = chain[0];
+    method.next = nextMethod && [nextMethod.name];
+  });
+
+  var methods = chain.reduce(function (bucket, method) {
+    // if (bucket[method.name]) {
+    //   bucket[method.name].next = bucket[method.name].next.concat(method.next);
+    // } else {
+    // }
+    bucket[method.name] = method;
+    return bucket;
+  }, {});
+
+  var _this = this;
+
+  document.addEventListener('stageIsOver', function (e) {
+    var method = methods[e.detail];
+    if(!method) {
+      return;
+    }
+
+    var t = method.beforeStageT || 0;
+    setTimeout(function () {
+      callMethod(method);
+    }, t);
+
+  }, false);
+
+  function createEvent(params) {
+    return function () {
+      var nextMethod = params.next;
+      // var nextMethod = params.next && params.next[0];
+      // params.next = params.next && params.next.slice(1, params.next.length);
+      var event = new CustomEvent('stageIsOver', {detail: nextMethod});
+      document.dispatchEvent(event);
+    };
+  }
+
+  function callMethod(params) {
+    var event = createEvent(params);
+    if (params.description != void 0) {
+      return _this.showDescription(params, event);
+    }
+    _this[params.name](event);
+  }
+
+  callMethod(chain[0]);
+};
+
+
+Tangle.prototype.createSVG = function(event) {
+  this.draw = SVG(this.svgId);
+  this.draw.addClass('overflowed');
+
+  this.graph = new Graph(this.draw);
+
+  this.mlCloud = new MLCloud(this.draw);
+  event();
+};
+
+Tangle.prototype.drawTangle = function(event) {
+  setTimeout(function () {
+    event();
+  }, 300);
+};
+
+Tangle.prototype.drawmlHosts = function(event) {
+  this.mlHosts = [];
+  var mlhostGroup = this.draw.group();
+
+  var _this = this, t = 0;
+  VERTEXES.forEach(function (vertex, i) {
+    if (mlHosts.indexOf(vertex.idx) > -1) {
+
+      setTimeout(function () {
+        var isLast = (_this.mlHosts.length + 1) == mlHosts.length;
+        var mlhost = new MLNode(mlhostGroup, vertex, isLast && event);
+        _this.mlHosts.push(mlhost);
+      }, t);
+
+      t += 500;
     }
   });
 };
 
-
-Tangle.prototype.createSVG = function() {
-  this.draw = SVG(this.svgId);
-
-  this.rootGroup = this.draw.group();
-  this.graph = new Graph(this.rootGroup, this.bounds, maxR);
-
-  this.mlhosts = VERTEXES.filter(function (v) {return v.is_ml;});
-  this.customers = VERTEXES.filter(function (v) {return v.is_customer;});
-
-  var mlhostGroup = this.rootGroup.group();
-  this.mlhosts.forEach(function(v) {
-    v.node = new VertexNode(mlhostGroup, v);
+Tangle.prototype.mlHostsToCluster = function(event) {
+  var _this = this;
+  this.mlHosts.forEach(function (node, i) {
+    var isLast = i == _this.mlHosts.length - 1;
+    node.connectToOther(_this.mlHosts, isLast && event);
   });
-  this.cognNode = this.mlhosts.find(function (v) {return v.main_ml;}).node;
-
-
-  this.descriptionList = document.querySelectorAll('#protocolDescription ol li');
-  // this.descriptionList.forEach(function (li) {
-  //   li.className = 'active';
-  // });
-  this.N = 0;
-  this.createMLNodes();
-  // this.createCustomers();
 };
 
-Tangle.prototype.createMLNodes = function(nextStep) {
-  var nextStep = 'nodesToCluster';
-  var desIdx = 0;
-  this.highlightDes(desIdx);
-
-  var t = 0;
-  this.mlhosts.forEach(function (vertex, i) {
-    setTimeout(function () {
-      vertex.node.activateML();
-    }, t);
-    t += 500;
-  });
-
-  this.setTimeout(nextStep, 3000);
-};
-
-Tangle.prototype.nodesToCluster = function() {
-  var nextStep = 'createCustomers';
-  // var nextStep = 'destroyScheme';
-  var desIdx = 1;
-  this.highlightDes(desIdx);
-
-  var lineGroup = this.rootGroup.group();
+Tangle.prototype.mlClusterToCenter = function(event) {
   var _this = this;
 
-  function createLine(s, e) {
-    var l = lineGroup.line(new SVG.PointArray([s.pos, s.pos]));
-    l.attr({stroke: mlcolor, opacity: 0.3, 'stroke-width': 1.5});
-
-    var end = [];
-    end[0] = s.pos[0] - ((s.pos[0] - e.pos[0]) / 2);
-    end[1] = s.pos[1] - ((s.pos[1] - e.pos[1]) / 2);
-    l.animate(150, 'sineOut').plot(new SVG.PointArray([s.pos, end]));
-
-    l.delay(25).animate(180, 'sineOut').attr({opacity: 1});
-    l.animate(200, 'sineIn').attr({opacity: 0.7});
+  function showCloud() {
+    _this.mlCloud.show();
   }
 
-  this.mlhosts.forEach(function (vertex, i) {
-    var neightbors = _this.mlhosts.slice(0, i);
-    neightbors.forEach(function (nVertex) {
-      createLine(vertex, nVertex);
-      createLine(nVertex, vertex);
-    });
+  this.mlHosts.forEach(function (node, i) {
+    var isLast = i == _this.mlHosts.length - 1;
+    node.moveToCenter(isLast && showCloud, isLast && event);
   });
+};
 
-  var t = (150 + 25 + 200) + 600;
-  setTimeout(function () {
-    _this.mlhosts.forEach(function (vertex) {
-      vertex.node.toCloud();
+Tangle.prototype.drawAgents = function(event) {
+  this.agents = []; // alll
+
+  var agentGroup = this.draw.group();
+  this.graph.vertexesGroup.before(agentGroup);
+
+  var _colors = Random.shuffle(agentsColors);
+
+  var _this = this;
+  VERTEXES.forEach(function (vertex, i) {
+    if (agentHosts.indexOf(vertex.idx) > -1) {
+      var isLast = (_this.agents.length + 1) == agentHosts.length;
+      var color = _colors[_this.agents.length];
+      var agent = new Agent(
+        agentGroup, vertex, color,
+        isLast && event,
+        _this.mlCloud
+      );
+      _this.agents.push(agent);
+    }
+  });
+};
+
+Tangle.prototype.customerSendRequest = function(event) {
+  this.mlCloud.show()
+  var agents = Random.shuffle(this.agents);
+  // var agents = this.agents.slice();
+  var _this = this;
+
+  this.customer = agents.pop();
+  this.providers = agents.slice(0, 3);
+
+  this.customer.sendRequest(event, true);
+};
+
+
+Tangle.prototype.findSolution = function(event) {
+  var _this = this;
+  this.customer.sendRequest(function () {
+    _this.mlCloud.findSolution(_this.customer, event);
+  })
+};
+
+Tangle.prototype.testProviders = function(event) {
+  var t = 0, d = 500;
+  var _this = this;
+
+  function testProviders() {
+    _this.providers.forEach(function (provider, i) {
+      setTimeout(function () {
+        var prev = _this.providers[i - 1];
+        if (prev) prev.deactivate();
+        provider.activate();
+        _this.mlCloud.testProvider(provider.color);
+
+        if (i == _this.providers.length - 1) {
+          setTimeout(function () {
+            _this.provider = provider;
+            _this.mlCloud.ding(event);
+          }, 150)
+          // _this.provider.startContract(_this.customer.color);
+          // _this.mlCloud.chooseProvider(_this.customer.color, event);
+          // event();
+        }
+      }, t);
+
+      t += d;
     });
-    lineGroup.animate(100).opacity(0)
+
     setTimeout(function () {
-      lineGroup.remove();
-    }, 100);
+    }, t);
+  }
 
-    _this.N = 0;
-    colors = Random.shuffle(colors);
-    _this.setTimeout(nextStep, 1000);
-  }, t);
+  testProviders();
+
 };
 
-Tangle.prototype.createCustomers = function() {
-  var nextStep = 'customerSendRequest';
-  var desIdx = 2;
 
-  this.highlightDes(desIdx);
+Tangle.prototype.providerSendResponse = function(event) {
+  var _this = this;
 
-  var customersGroup = this.rootGroup.group();
-  customersGroup.backward();
-  this.customers.forEach(function (vertex, i) {
-    vertex.node && vertex.node.group.remove();
-    vertex.node = new VertexNode(customersGroup, vertex);
-    vertex.node.activateBuyer(
-      colors[i]
-    );
+  function receiveResponse() {
+    _this.customer.receiveResponse(function () {
+      _this.mlCloud.fallOutColor(function () {
+        _this.customer.deactivate();
+        _this.provider.deactivate();
+        event();
+      });
+    });
+  }
+
+
+  this.mlCloud.chooseProvider(this.customer.color);
+  this.provider.receiveRequest(this.customer.color, function () {
+    _this.provider.sendResponse(function () {
+      // _this.provider.deactivate();
+      receiveResponse();
+      // _this.mlCloud.receiveResponse(receiveResponse);
+    });
   });
 
-  this.N = 0;
-
-  this.setTimeout(nextStep, 1200);
-
 };
 
-Tangle.prototype.customerSendRequest = function() {
-  var nextStep = 'customerRecieveResponse';
-  var desIdx = 2;
-  this.highlightDes(desIdx);
 
-  var nodes = this.customers.map(function (v) {return v.node;})
-  var agents = Random.shuffle(nodes);
-  this.customer = agents[0];
-  this.agents = agents.slice(1, 5);
-
-  this.customer.sendRequest();
-
-  var shadowTime = this.cognNode.shadow.width() * 0.5 * qSpeed,
-      oneBodyTime = this.customer.qtext.node.getBBox().width * qSpeed;
-
-  var t = this.customer.s - shadowTime + oneBodyTime;
-  this.setTimeout(nextStep, t);
-};
-
-Tangle.prototype.customerRecieveResponse = function() {
-  // var nextStep = 'customerSendRequest';
-  // var nextStep = 'destroyScheme';
-
-  var desIdx = 3;
-  this.highlightDes(desIdx);
-
-  this.cognNode.findProvider(this.customer, this.agents);
-  this.N += 1;
-
-  if (this.N < 3) {
-    this.setTimeout('customerSendRequest', 18400);
-  } else {
-    this.setTimeout('destroyScheme', 19500);
-  }
-};
-
-Tangle.prototype.destroyScheme = function() {
-  var nextStep = 'createSVG';
-  this.highlightDes(null);
-
+Tangle.prototype.clear = function(event) {
   this.draw.addClass('blured');
   this.draw.delay(100).animate(100, '>').opacity(0);
 
   var _this = this;
   setTimeout(function () {
     _this.draw.remove();
-    VERTEXES.forEach(function (v) {
-      v.node = undefined;
-    });
-    _this.setTimeout(nextStep, 250);
+    event();
   }, 300);
 
 };
-

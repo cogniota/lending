@@ -1,204 +1,301 @@
-
-
-var maxR = 20;
-
 function createTangle(parent) {
-  var svg = document.createElement('svg');
-  var svgId = 'svg-' + document.getElementsByTagName('div').length;
-  svg.setAttribute('id', svgId);
-  parent.appendChild(svg);
-
   var bounds = parent.getBoundingClientRect();
+  var svgId = parent.getAttribute('id');
   var tangle = new Tangle(svgId, bounds);
 }
-
 
 function Tangle(svgId, bounds) {
   this.svgId = svgId;
   this.bounds = bounds;
 
-  this.createSVG();
+  this.description = document.querySelector('#protocolDescription');
+
+  this.run();
 }
 
-
-Tangle.prototype.setTimeout = function(method, t) {
+Tangle.prototype.showDescription = function(params, event) {
   var _this = this;
+
+  function show(text){
+    if (text) {
+      _this.draw.addClass('overflowed');
+      _this.description.innerHTML = text;
+      _this.description.className = 'active';
+    } else {
+      _this.draw.removeClass('overflowed');
+      _this.description.innerHTML = '';
+      _this.description.className = '';
+    }
+  }
+
+  show(params.description);
+
   setTimeout(function () {
-    _this[method]();
-  }, t);
+    show();
+
+    setTimeout(function () {
+      _this[params.name](event);
+    }, params.beforeActionT || 1450);
+
+  }, params.textT || 3300);
 };
 
-Tangle.prototype.highlightDes = function(idx) {
-  this.descriptionList.forEach(function (li, n) {
-    if (n == idx) {
-      li.className = 'active';
-    } else {
-      li.className = '';
+Tangle.prototype.run = function() {
+  var chain = [
+    {name: 'createSVG', beforeStageT: 200},
+
+    {name: 'drawTangle', beforeStageT: 100,
+     description: 'This is IOTA tangle',
+     textT: 1900, beforeActionT: 500},
+
+    {name: 'drawmlHosts', beforeStageT: 1000,
+     description: 'Any IOTA node can be turned into a machine learning node.',
+     beforeActionT: 800},
+
+    {name: 'mlHostsToCluster', beforeStageT: 880,
+     description: 'Machine Learning nodes create CognIOTA clusters.',
+     },
+    {name: 'mlClusterToCenter', beforeStageT: 150},
+
+    {name: 'drawAgents', beforeStageT: 900,
+     description: 'IOTA nodes request machine learing services from CognIOTA.',
+     },
+    {name: 'customerSendRequest', beforeStageT: 150},
+
+    {name: 'findSolution', beforeStageT: 880,
+     description: 'CognIOTA finds the solution for the request',
+    },
+
+    {name: 'testProviders', beforeStageT: 550,
+     description: 'It uses auctions for finding the best provider',
+     },
+
+    {name: 'providerSendResponse', beforeStageT: 550,
+     description: 'CognIOTA creates smartcontracts between customers.'},
+
+    {name: 'clear'}
+  ];
+
+  chain.forEach(function (method, i) {
+    var nextMethod = chain[i + 1];
+    if (!nextMethod) nextMethod = chain[0];
+    method.next = nextMethod && [nextMethod.name];
+  });
+
+  var methods = chain.reduce(function (bucket, method) {
+    // if (bucket[method.name]) {
+    //   bucket[method.name].next = bucket[method.name].next.concat(method.next);
+    // } else {
+    // }
+    bucket[method.name] = method;
+    return bucket;
+  }, {});
+
+  var _this = this;
+
+  document.addEventListener('stageIsOver', function (e) {
+    var method = methods[e.detail];
+    if(!method) {
+      return;
+    }
+
+    var t = method.beforeStageT || 0;
+    setTimeout(function () {
+      callMethod(method);
+    }, t);
+
+  }, false);
+
+  function createEvent(params) {
+    return function () {
+      var nextMethod = params.next;
+      // var nextMethod = params.next && params.next[0];
+      // params.next = params.next && params.next.slice(1, params.next.length);
+      var event = new CustomEvent('stageIsOver', {detail: nextMethod});
+      document.dispatchEvent(event);
+    };
+  }
+
+  function callMethod(params) {
+    var event = createEvent(params);
+    if (params.description != void 0) {
+      return _this.showDescription(params, event);
+    }
+    _this[params.name](event);
+  }
+
+  callMethod(chain[0]);
+};
+
+
+Tangle.prototype.createSVG = function(event) {
+  this.draw = SVG(this.svgId);
+  this.draw.addClass('overflowed');
+
+  this.graph = new Graph(this.draw);
+
+  this.mlCloud = new MLCloud(this.draw);
+  event();
+};
+
+Tangle.prototype.drawTangle = function(event) {
+  setTimeout(function () {
+    event();
+  }, 300);
+};
+
+Tangle.prototype.drawmlHosts = function(event) {
+  this.mlHosts = [];
+  var mlhostGroup = this.draw.group();
+
+  var _this = this, t = 0;
+  VERTEXES.forEach(function (vertex, i) {
+    if (mlHosts.indexOf(vertex.idx) > -1) {
+
+      setTimeout(function () {
+        var isLast = (_this.mlHosts.length + 1) == mlHosts.length;
+        var mlhost = new MLNode(mlhostGroup, vertex, isLast && event);
+        _this.mlHosts.push(mlhost);
+      }, t);
+
+      t += 500;
     }
   });
 };
 
-
-Tangle.prototype.createSVG = function() {
-  this.draw = SVG(this.svgId);
-
-  this.rootGroup = this.draw.group();
-  this.graph = new Graph(this.rootGroup, this.bounds, maxR);
-
-  this.mlhosts = VERTEXES.filter(function (v) {return v.is_ml;});
-  this.customers = VERTEXES.filter(function (v) {return v.is_customer;});
-
-  var mlhostGroup = this.rootGroup.group();
-  this.mlhosts.forEach(function(v) {
-    v.node = new VertexNode(mlhostGroup, v);
+Tangle.prototype.mlHostsToCluster = function(event) {
+  var _this = this;
+  this.mlHosts.forEach(function (node, i) {
+    var isLast = i == _this.mlHosts.length - 1;
+    node.connectToOther(_this.mlHosts, isLast && event);
   });
-  this.cognNode = this.mlhosts.find(function (v) {return v.main_ml;}).node;
-
-
-  this.descriptionList = document.querySelectorAll('#protocolDescription ol li');
-  // this.descriptionList.forEach(function (li) {
-  //   li.className = 'active';
-  // });
-  this.N = 0;
-  this.createMLNodes();
-  // this.createCustomers();
 };
 
-Tangle.prototype.createMLNodes = function(nextStep) {
-  var nextStep = 'nodesToCluster';
-  var desIdx = 0;
-  this.highlightDes(desIdx);
-
-  var t = 0;
-  this.mlhosts.forEach(function (vertex, i) {
-    setTimeout(function () {
-      vertex.node.activateML();
-    }, t);
-    t += 500;
-  });
-
-  this.setTimeout(nextStep, 3000);
-};
-
-Tangle.prototype.nodesToCluster = function() {
-  var nextStep = 'createCustomers';
-  // var nextStep = 'destroyScheme';
-  var desIdx = 1;
-  this.highlightDes(desIdx);
-
-  var lineGroup = this.rootGroup.group();
+Tangle.prototype.mlClusterToCenter = function(event) {
   var _this = this;
 
-  function createLine(s, e) {
-    var l = lineGroup.line(new SVG.PointArray([s.pos, s.pos]));
-    l.attr({stroke: mlcolor, opacity: 0.3, 'stroke-width': 1.5});
-
-    var end = [];
-    end[0] = s.pos[0] - ((s.pos[0] - e.pos[0]) / 2);
-    end[1] = s.pos[1] - ((s.pos[1] - e.pos[1]) / 2);
-    l.animate(150, 'sineOut').plot(new SVG.PointArray([s.pos, end]));
-
-    l.delay(25).animate(180, 'sineOut').attr({opacity: 1});
-    l.animate(200, 'sineIn').attr({opacity: 0.7});
+  function showCloud() {
+    _this.mlCloud.show();
   }
 
-  this.mlhosts.forEach(function (vertex, i) {
-    var neightbors = _this.mlhosts.slice(0, i);
-    neightbors.forEach(function (nVertex) {
-      createLine(vertex, nVertex);
-      createLine(nVertex, vertex);
-    });
+  this.mlHosts.forEach(function (node, i) {
+    var isLast = i == _this.mlHosts.length - 1;
+    node.moveToCenter(isLast && showCloud, isLast && event);
   });
+};
 
-  var t = (150 + 25 + 200) + 600;
-  setTimeout(function () {
-    _this.mlhosts.forEach(function (vertex) {
-      vertex.node.toCloud();
+Tangle.prototype.drawAgents = function(event) {
+  this.agents = []; // alll
+
+  var agentGroup = this.draw.group();
+  this.graph.vertexesGroup.before(agentGroup);
+
+  var _colors = Random.shuffle(agentsColors);
+
+  var _this = this;
+  VERTEXES.forEach(function (vertex, i) {
+    if (agentHosts.indexOf(vertex.idx) > -1) {
+      var isLast = (_this.agents.length + 1) == agentHosts.length;
+      var color = _colors[_this.agents.length];
+      var agent = new Agent(
+        agentGroup, vertex, color,
+        isLast && event,
+        _this.mlCloud
+      );
+      _this.agents.push(agent);
+    }
+  });
+};
+
+Tangle.prototype.customerSendRequest = function(event) {
+  this.mlCloud.show()
+  var agents = Random.shuffle(this.agents);
+  // var agents = this.agents.slice();
+  var _this = this;
+
+  this.customer = agents.pop();
+  this.providers = agents.slice(0, 3);
+
+  this.customer.sendRequest(event, true);
+};
+
+
+Tangle.prototype.findSolution = function(event) {
+  var _this = this;
+  this.customer.sendRequest(function () {
+    _this.mlCloud.findSolution(_this.customer, event);
+  })
+};
+
+Tangle.prototype.testProviders = function(event) {
+  var t = 0, d = 500;
+  var _this = this;
+
+  function testProviders() {
+    _this.providers.forEach(function (provider, i) {
+      setTimeout(function () {
+        var prev = _this.providers[i - 1];
+        if (prev) prev.deactivate();
+        provider.activate();
+        _this.mlCloud.testProvider(provider.color);
+
+        if (i == _this.providers.length - 1) {
+          setTimeout(function () {
+            _this.provider = provider;
+            _this.mlCloud.ding(event);
+          }, 150)
+          // _this.provider.startContract(_this.customer.color);
+          // _this.mlCloud.chooseProvider(_this.customer.color, event);
+          // event();
+        }
+      }, t);
+
+      t += d;
     });
-    lineGroup.animate(100).opacity(0)
+
     setTimeout(function () {
-      lineGroup.remove();
-    }, 100);
+    }, t);
+  }
 
-    _this.N = 0;
-    colors = Random.shuffle(colors);
-    _this.setTimeout(nextStep, 1000);
-  }, t);
+  testProviders();
+
 };
 
-Tangle.prototype.createCustomers = function() {
-  var nextStep = 'customerSendRequest';
-  var desIdx = 2;
 
-  this.highlightDes(desIdx);
+Tangle.prototype.providerSendResponse = function(event) {
+  var _this = this;
 
-  var customersGroup = this.rootGroup.group();
-  customersGroup.backward();
-  this.customers.forEach(function (vertex, i) {
-    vertex.node && vertex.node.group.remove();
-    vertex.node = new VertexNode(customersGroup, vertex);
-    vertex.node.activateBuyer(
-      colors[i]
-    );
+  function receiveResponse() {
+    _this.customer.receiveResponse(function () {
+      _this.mlCloud.fallOutColor(function () {
+        _this.customer.deactivate();
+        _this.provider.deactivate();
+        event();
+      });
+    });
+  }
+
+
+  this.mlCloud.chooseProvider(this.customer.color);
+  this.provider.receiveRequest(this.customer.color, function () {
+    _this.provider.sendResponse(function () {
+      // _this.provider.deactivate();
+      receiveResponse();
+      // _this.mlCloud.receiveResponse(receiveResponse);
+    });
   });
 
-  this.N = 0;
-
-  this.setTimeout(nextStep, 1200);
-
 };
 
-Tangle.prototype.customerSendRequest = function() {
-  var nextStep = 'customerRecieveResponse';
-  var desIdx = 2;
-  this.highlightDes(desIdx);
 
-  var nodes = this.customers.map(function (v) {return v.node;})
-  var agents = Random.shuffle(nodes);
-  this.customer = agents[0];
-  this.agents = agents.slice(1, 5);
-
-  this.customer.sendRequest();
-
-  var shadowTime = this.cognNode.shadow.width() * 0.5 * qSpeed,
-      oneBodyTime = this.customer.qtext.node.getBBox().width * qSpeed;
-
-  var t = this.customer.s - shadowTime + oneBodyTime;
-  this.setTimeout(nextStep, t);
-};
-
-Tangle.prototype.customerRecieveResponse = function() {
-  // var nextStep = 'customerSendRequest';
-  // var nextStep = 'destroyScheme';
-
-  var desIdx = 3;
-  this.highlightDes(desIdx);
-
-  this.cognNode.findProvider(this.customer, this.agents);
-  this.N += 1;
-
-  if (this.N < 3) {
-    this.setTimeout('customerSendRequest', 18400);
-  } else {
-    this.setTimeout('destroyScheme', 19500);
-  }
-};
-
-Tangle.prototype.destroyScheme = function() {
-  var nextStep = 'createSVG';
-  this.highlightDes(null);
-
+Tangle.prototype.clear = function(event) {
   this.draw.addClass('blured');
   this.draw.delay(100).animate(100, '>').opacity(0);
 
   var _this = this;
   setTimeout(function () {
     _this.draw.remove();
-    VERTEXES.forEach(function (v) {
-      v.node = undefined;
-    });
-    _this.setTimeout(nextStep, 250);
+    event();
   }, 300);
 
 };
-
