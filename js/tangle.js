@@ -45,7 +45,7 @@ Tangle.prototype.run = function() {
     {name: 'createSVG', beforeStageT: 200},
 
     {name: 'drawTangle', beforeStageT: 100,
-     description: 'This is IOTA tangle',
+     description: 'It is IOTA tangle',
      textT: 1900, beforeActionT: 500},
 
     {name: 'drawmlHosts', beforeStageT: 1000,
@@ -53,7 +53,7 @@ Tangle.prototype.run = function() {
      beforeActionT: 800},
 
     {name: 'mlHostsToCluster', beforeStageT: 880,
-     description: 'Machine Learning nodes create CognIOTA clusters.',
+     description: 'Machine Learning nodes create CognIOTA cluster.',
      },
     {name: 'mlClusterToCenter', beforeStageT: 150},
 
@@ -71,7 +71,7 @@ Tangle.prototype.run = function() {
      },
 
     {name: 'providerSendResponse', beforeStageT: 550,
-     description: 'CognIOTA creates smartcontracts between customers.'},
+     description: 'CognIOTA powers the economy of IoT.'},
 
     {name: 'clear'}
   ];
