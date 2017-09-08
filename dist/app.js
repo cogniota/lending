@@ -774,7 +774,7 @@ var gridParams = {
 
  var mlNodeCloudParams = {
   // logo
-  logoPath: 'dist/l3.png',
+  logoPath: 'dist/l4.png',
   logoW: 50,
   // main
   r: 30,
@@ -808,7 +808,7 @@ Tangle.prototype.showDescription = function(params, event) {
   function show(text){
     if (text) {
       _this.draw.addClass('overflowed');
-      _this.description.innerHTML = text;
+      _this.description.innerHTML = '<div>' + text + '</div>';
       _this.description.className = 'active';
     } else {
       _this.draw.removeClass('overflowed');
@@ -831,36 +831,40 @@ Tangle.prototype.showDescription = function(params, event) {
 
 Tangle.prototype.run = function() {
   var chain = [
-    {name: 'createSVG', beforeStageT: 200},
+    {name: 'createSVG', beforeStageT: 300},
 
     {name: 'drawTangle', beforeStageT: 100,
-     description: 'This is IOTA tangle',
+     description:
+      'It is <strong>IOTA tangle</strong>.',
      textT: 1900, beforeActionT: 500},
 
     {name: 'drawmlHosts', beforeStageT: 1000,
-     description: 'Any IOTA node can be turned into a machine learning node.',
+     description:
+      'Any IOTA node can be turned into a <strong>machine learning node</strong>.',
      beforeActionT: 800},
 
     {name: 'mlHostsToCluster', beforeStageT: 880,
-     description: 'Machine Learning nodes create CognIOTA clusters.',
+     description:
+      'Machine Learning nodes create <strong>CognIOTA cluster.</strong>',
      },
-    {name: 'mlClusterToCenter', beforeStageT: 150},
+    {name: 'mlClusterToCenter', beforeStageT: 100},
 
     {name: 'drawAgents', beforeStageT: 900,
-     description: 'IOTA nodes request machine learing services from CognIOTA.',
+     description:
+      'IOTA nodes <strong>request</strong> machine learing <strong>services</strong> from CognIOTA.',
      },
     {name: 'customerSendRequest', beforeStageT: 150},
 
-    {name: 'findSolution', beforeStageT: 880,
-     description: 'CognIOTA finds the solution for the request',
+    {name: 'findSolution', beforeStageT: 900,
+     description: 'CognIOTA <strong>finds the solution</strong> for the request.',
     },
 
     {name: 'testProviders', beforeStageT: 550,
-     description: 'It uses auctions for finding the best provider',
+     description: 'It uses <strong>auctions</strong> for finding the best provider',
      },
 
     {name: 'providerSendResponse', beforeStageT: 550,
-     description: 'CognIOTA creates smartcontracts between customers.'},
+     description: 'CognIOTA powers <strong>the economy of IoT</strong>.'},
 
     {name: 'clear'}
   ];
