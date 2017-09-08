@@ -817,7 +817,7 @@ Tangle.prototype.run = function() {
 
     {name: 'drawAgents', beforeStageT: 700,
      description:
-      'IOTA nodes <strong>request</strong> machine learing <strong>services</strong> from CognIOTA.',
+      'IOTA nodes <strong>request</strong> machine learning <strong>services</strong> from CognIOTA.',
      },
     {name: 'customerSendRequest', beforeStageT: 150},
 
