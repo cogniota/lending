@@ -1,4 +1,4 @@
-function AgentLine(draw, vertex, color, circle) {
+function AgentLine(draw, cx, cy, vertex, color, circle) {
   this.color = color;
   this.speed = 60;
   this.defParams = {
@@ -16,8 +16,8 @@ function AgentLine(draw, vertex, color, circle) {
 
   this.sx = vertex.pos[0];
   this.sy = vertex.pos[1];
-  this.ex = mlNodeCloudParams.cx;
-  this.ey = mlNodeCloudParams.cy;
+  this.ex = cx;
+  this.ey = cy;
 
   this.elem = this.draw(draw);
 }
@@ -43,6 +43,10 @@ AgentLine.prototype.show = function(event) {
   }, d + t);
 };
 
+AgentLine.prototype.opacity = function(opacity) {
+  this.elem.animate().opacity(opacity);
+};
+
 AgentLine.prototype.toCenter = function(attr, i) {
   // this.lastDirection = 'toCenter';
   var s = this.elem.attr('stroke-dasharray').split(' ');
@@ -53,7 +57,7 @@ AgentLine.prototype.toCenter = function(attr, i) {
   if (attr) {
     this.elem.animate(100).attr(attr);
   }
-  this.elem.animate(d * this.speed).attr({'stroke-dashoffset': d * (i || -1)}).loop();
+  // this.elem.animate(d * this.speed).attr({'stroke-dashoffset': d * (i || -1)}).loop();
 };
 
 AgentLine.prototype.fromCenter = function(attr) {

@@ -1,4 +1,4 @@
-var VERTEXES = [
+var VERTEXES_TANGLE = [
   {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
   {idx: 2, neightbors: [3, 6], pos: [137, 25]},
   {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
@@ -26,8 +26,8 @@ var VERTEXES = [
 ];
 
 
-var mlHosts = [2, 4, 6, 9, 18, 21];
-var agentHosts = [2, 4, 9, 12, 18, 21];
+var mlHosts_TANGLE = [2, 4, 6, 9, 18, 21];
+var agentHosts_TANGLE = [2, 4, 9, 12, 18, 21];
 
 var agentsColors = [
   'rgb(255, 191, 0)',  // orange
@@ -38,22 +38,29 @@ var agentsColors = [
   'rgb(255, 0, 106)',  // red
 ];
 
-var gridParams = {
+var gridParams_TANGLE = {
   r: 12,
-  color: '#2c9b5a',
+  w: 1,
+  sw: 1,
+  fill1: '#6f8b82',
+  stroke1: '#5d7e74',
+  fill: '#2bd46c',
+  stroke: '#2bd46c',
+  // color: '#2c9b5a',
+  // color: 'yellow',
+  // color: '#f1f1b8',
+  // color: '#b3f7ad',
 };
 
  var mlNodeCloudParams = {
   // logo
-  logoPath: 'dist/l4.png',
+  logoPath: 'dist/logo/l4.png',
   logoW: 50,
   // main
   r: 30,
   // color: '#00fff5',
   color: '#00d6ff',
   edges: 8,
-  cx: 250,
-  cy: 150,
   // shadow
   shadowK: 1.3,
   shadowOpacity: 0.3,

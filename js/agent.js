@@ -1,4 +1,4 @@
- function Agent(draw, vertex, color, event, mlCloud) {
+ function Agent(draw, cx, cy, vertex, color, event, mlCloud) {
   this.vertex = Object.assign({}, vertex);
   this.mlCloud = mlCloud;
 
@@ -8,7 +8,7 @@
   this.circle = new AgentCircle(this.group, vertex, color);
   this.circle.show();
 
-  this.line = new AgentLine(this.group, vertex, color);
+  this.line = new AgentLine(this.group, cx, cy, vertex, color);
   this.line.show(event);
 
   this.text = new AgentText(this.group, this.line.array(), this.circle.r, color);

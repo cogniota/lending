@@ -1,14 +1,15 @@
-function createTangle(parent) {
-  var bounds = parent.getBoundingClientRect();
+function createTangle() {
+  var parent = document.querySelector('#firstPage .svg');
+  // var bounds = parent.getBoundingClientRect();
   var svgId = parent.getAttribute('id');
-  var tangle = new Tangle(svgId, bounds);
+  var tangle = new Tangle(svgId);
 }
 
 function Tangle(svgId, bounds) {
   this.svgId = svgId;
-  this.bounds = bounds;
+  // this.bounds = bounds;
 
-  this.description = document.querySelector('#protocolDescription');
+  this.description = document.querySelector('#firstPage .description [protocol]');
 
   this.run();
 }
@@ -136,9 +137,9 @@ Tangle.prototype.createSVG = function(event) {
   this.draw = SVG(this.svgId);
   this.draw.addClass('overflowed');
 
-  this.graph = new Graph(this.draw);
+  this.graph = new Graph(this.draw, VERTEXES_TANGLE, gridParams_TANGLE);
 
-  this.mlCloud = new MLCloud(this.draw);
+  this.mlCloud = new MLCloud(this.draw, 250, 150);
   event();
 };
 
@@ -153,12 +154,13 @@ Tangle.prototype.drawmlHosts = function(event) {
   var mlhostGroup = this.draw.group();
 
   var _this = this, t = 0;
-  VERTEXES.forEach(function (vertex, i) {
-    if (mlHosts.indexOf(vertex.idx) > -1) {
+  this.graph.toColor(gridParams_TANGLE.fill1, gridParams_TANGLE.stroke1, 4500);
+  VERTEXES_TANGLE.forEach(function (vertex, i) {
+    if (mlHosts_TANGLE.indexOf(vertex.idx) > -1) {
 
       setTimeout(function () {
-        var isLast = (_this.mlHosts.length + 1) == mlHosts.length;
-        var mlhost = new MLNode(mlhostGroup, vertex, isLast && event);
+        var isLast = (_this.mlHosts.length + 1) == mlHosts_TANGLE.length;
+        var mlhost = new MLNode(mlhostGroup, vertex, gridParams_TANGLE.fill, isLast && event);
         _this.mlHosts.push(mlhost);
       }, t);
 
@@ -184,12 +186,14 @@ Tangle.prototype.mlClusterToCenter = function(event) {
 
   this.mlHosts.forEach(function (node, i) {
     var isLast = i == _this.mlHosts.length - 1;
-    node.moveToCenter(isLast && showCloud, isLast && event);
+    node.moveToCenter(_this.mlCloud.cx, _this.mlCloud.cy,
+                      isLast && showCloud,
+                      isLast && event);
   });
 };
 
 Tangle.prototype.drawAgents = function(event) {
-  this.agents = []; // alll
+  this.agents = [];
 
   var agentGroup = this.draw.group();
   this.graph.vertexesGroup.before(agentGroup);
@@ -197,12 +201,12 @@ Tangle.prototype.drawAgents = function(event) {
   var _colors = Random.shuffle(agentsColors);
 
   var _this = this;
-  VERTEXES.forEach(function (vertex, i) {
-    if (agentHosts.indexOf(vertex.idx) > -1) {
-      var isLast = (_this.agents.length + 1) == agentHosts.length;
+  VERTEXES_TANGLE.forEach(function (vertex, i) {
+    if (agentHosts_TANGLE.indexOf(vertex.idx) > -1) {
+      var isLast = (_this.agents.length + 1) == agentHosts_TANGLE.length;
       var color = _colors[_this.agents.length];
       var agent = new Agent(
-        agentGroup, vertex, color,
+        agentGroup, _this.mlCloud.cx, _this.mlCloud.cy, vertex, color,
         isLast && event,
         _this.mlCloud
       );

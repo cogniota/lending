@@ -1,10 +1,13 @@
-function MLCloud(draw) {
+function MLCloud(draw, cx, cy) {
   this.group = draw.group();
   this.group.backward();
 
   this.params = Object.assign({}, mlNodeCloudParams);
-  this.cx = this.params.cx;
-  this.cy = this.params.cy;
+  this.cx = cx;
+  this.cy = cy;
+  // this.cx = this.params.cx;
+  // this.cy = this.params.cy;
+  // console.log(draw)
 
   this.group.opacity(0).center(this.cx, this.cy);
 

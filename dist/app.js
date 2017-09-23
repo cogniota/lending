@@ -60,7 +60,7 @@ AgentCircle.prototype.spinAround = function(callback, toActive) {
               callback && callback();
            });
 };
-function AgentLine(draw, vertex, color, circle) {
+function AgentLine(draw, cx, cy, vertex, color, circle) {
   this.color = color;
   this.speed = 60;
   this.defParams = {
@@ -78,8 +78,8 @@ function AgentLine(draw, vertex, color, circle) {
 
   this.sx = vertex.pos[0];
   this.sy = vertex.pos[1];
-  this.ex = mlNodeCloudParams.cx;
-  this.ey = mlNodeCloudParams.cy;
+  this.ex = cx;
+  this.ey = cy;
 
   this.elem = this.draw(draw);
 }
@@ -105,6 +105,10 @@ AgentLine.prototype.show = function(event) {
   }, d + t);
 };
 
+AgentLine.prototype.opacity = function(opacity) {
+  this.elem.animate().opacity(opacity);
+};
+
 AgentLine.prototype.toCenter = function(attr, i) {
   // this.lastDirection = 'toCenter';
   var s = this.elem.attr('stroke-dasharray').split(' ');
@@ -115,7 +119,7 @@ AgentLine.prototype.toCenter = function(attr, i) {
   if (attr) {
     this.elem.animate(100).attr(attr);
   }
-  this.elem.animate(d * this.speed).attr({'stroke-dashoffset': d * (i || -1)}).loop();
+  // this.elem.animate(d * this.speed).attr({'stroke-dashoffset': d * (i || -1)}).loop();
 };
 
 AgentLine.prototype.fromCenter = function(attr) {
@@ -278,7 +282,7 @@ AgentText.prototype.sendResponse = function(event, d) {
 AgentText.prototype.receiveResponse = function(event) {
   this.move({text: '!'}, event);
 };
- function Agent(draw, vertex, color, event, mlCloud) {
+ function Agent(draw, cx, cy, vertex, color, event, mlCloud) {
   this.vertex = Object.assign({}, vertex);
   this.mlCloud = mlCloud;
 
@@ -288,7 +292,7 @@ AgentText.prototype.receiveResponse = function(event) {
   this.circle = new AgentCircle(this.group, vertex, color);
   this.circle.show();
 
-  this.line = new AgentLine(this.group, vertex, color);
+  this.line = new AgentLine(this.group, cx, cy, vertex, color);
   this.line.show(event);
 
   this.text = new AgentText(this.group, this.line.array(), this.circle.r, color);
@@ -364,21 +368,85 @@ Agent.prototype.receiveResponse = function(event) {
     _this.circle.spinAround(event);
   });
 };
-function Graph(draw) {
+function Car(draw, vertex, grid, color) {
+  this.grid = grid;
+  this.w = 40;
+  this.color = color;
+
+  this.currentVertexIdx = vertex.idx;
+  this.group = draw.group().center(vertex.pos[0] - this.w / 2, vertex.pos[1] - this.w / 2);
+
+  // this.drawCircle(gridParams_SALESMAN.fill, '#f5da98', 1);
+  this.drawCircle(this.color, '#f5da98', 1);
+  // this.drawCircle(this.color, this.color, 1);
+  this.img = this.drawCar('black', 0.65);
+  // this.drawCar(this.color, 0.5)
+  // var path = [];
+  // for (var i = 0; i < 1; i++) {
+  //   var nextId = Random.choice(vertex.neightbors);
+  //   var vertex = this.grid.vertexes[nextId];
+  //   path.push(vertex);
+  //   console.log(vertex.pos)
+  // }
+  // var _this = this;
+  // path.forEach(function (vertex) {
+  //   console.log(vertex.pos)
+  //   _this.group.animate(3000).center(vertex.pos[0], vertex.pos[1])
+  // });
+  // this.go(Random.choice(vertex.neightbors));
+}
+
+Car.prototype.drawCar = function() {
+  // var img = this.group.image('dist/cars/electricity.svg', 30, 30);
+  // img.center(this.w / 2, this.w / 2);
+  // return img;
+  var car = this.group.group();
+  car.opacity(0.65);
+  // car.fill(color);
+  // car.attr({'stroke': 'white', 'stroke-width': '3px'});
+  car.path("M264.719,145.282l-6.709-48.631c-5.274-38.25-38.184-67.118-76.712-67.516v20.204 c28.505,0.397,52.825,21.753,56.737,50.068l5.822,42.221c-4.566-0.144,12.15-0.105-74.792-0.105 c-18.292,32.607-17.683,32.837-22.051,35.357c-9.406,5.414-20.508-1.961-20.508-11.839v-23.519c0,0-63.808,0.079-64.605,0.105 l5.822-42.221c3.932-28.49,28.521-49.974,57.25-50.118l11.994-20.19h-11.709c-38.877,0-72.199,29.039-77.509,67.552l-6.708,48.631 C17.039,153.244,0,173.11,0,196.424c0,25.727,20.743,47.257,48.7,53.214v26.082c0,15.243,12.356,27.6,27.6,27.6 c15.248,0,27.604-12.356,27.604-27.6V251.33h97.953v24.391c0,15.243,12.357,27.6,27.6,27.6c15.248,0,27.604-12.356,27.604-27.6 v-26.082c27.958-5.957,48.695-27.486,48.695-53.214C305.755,173.115,288.715,153.244,264.719,145.282z M36.338,179.355 c15.423-12.393,37.23-0.725,37.23,17.801c0,12.666-10.266,22.933-22.932,22.933C29.145,220.089,19.376,193.006,36.338,179.355z M255.124,220.089c-12.665,0-22.932-10.267-22.932-22.933c0-0.035,0.011-0.074,0.011-0.108 c0.094-18.65,22.001-29.922,37.219-17.692c5.226,4.205,8.634,10.575,8.634,17.801C278.056,209.822,267.789,220.089,255.124,220.089 z");
+  car.path("M116.326,88.838c0.328,0.572,0.94,0.932,1.603,0.932h20.413v75.273c0,0.841,0.567,1.572,1.379,1.787 c0.154,0.039,0.309,0.06,0.463,0.06c0.657,0,1.279-0.349,1.612-0.94l49.78-88.727c0.323-0.572,0.313-1.269-0.015-1.836 c-0.334-0.563-0.936-0.911-1.592-0.911h-20.503V4.277c0-0.831-0.557-1.557-1.355-1.776c-0.159-0.045-0.323-0.065-0.487-0.065 c-0.637,0-1.249,0.334-1.587,0.901l-49.691,83.645C116.006,87.554,115.997,88.26,116.326,88.838z");
+  car.center(this.w / 2, this.w / 2 - 3);
+  car.scale(0.1);
+  return car;
+};
+
+Car.prototype.drawCircle = function(stroke, fill, op) {
+  var circle = this.group.circle().attr({
+    'r': 20,
+    // 'fill': '#f8d27b',
+    'fill': fill,
+    'fill-opacity': op,
+    'stroke': stroke,
+    'stroke-width': 3
+  }).center(this.w / 2, this.w / 2);
+  return circle;
+};
+
+Car.prototype.go = function(nextId) {
+  var vertex = this.grid.vertexes[nextId];
+  var _this = this;
+  this.group.animate(3000, '<>').center(vertex.pos[0], vertex.pos[1]).once(1, function () {
+    _this.go(Random.choice(vertex.neightbors));
+  });
+};
+function Graph(draw, VERTEXES, gridParams) {
   this.edgeGroup = draw.group();
   this.vertexesGroup = draw.group();
+  this.gridParams = gridParams;
 
   this.vertexes = VERTEXES.reduce(function (bucket, v) {
     bucket[v.idx] = v;
     return bucket;
   }, {});
+  this.vertexesList = VERTEXES.slice();
 
   this.createVertexes();
 }
 
 Graph.prototype.createVertexes = function() {
   var _this = this;
-  VERTEXES.forEach(function (vertex) {
+  this.vertexesList.forEach(function (vertex) {
     _this.createVertex(vertex);
   });
 };
@@ -386,17 +454,30 @@ Graph.prototype.createVertexes = function() {
 Graph.prototype.createVertex = function(vertex) {
   var _this = this;
 
-  var path = getCirclePath(gridParams.r);
+  var path = getCirclePath(this.gridParams.r);
   var gridNode = this.vertexesGroup.path(path);
-  gridNode.fill(gridParams.color).center(vertex.pos[0], vertex.pos[1]);
-
+  gridNode.attr({
+    'fill': this.gridParams.fill,
+    'stroke': this.gridParams.stroke,
+    'stroke-width': this.gridParams.sw,
+  })
+  .center(vertex.pos[0], vertex.pos[1]);
+  // this.vertexesGroup.text(vertex.idx + '').center(vertex.pos[0] + 5, vertex.pos[1] + 5);
 
   vertex.neightbors.forEach(function (neightborId) {
     var neightbor = _this.vertexes[neightborId];
+    neightbor.neightbors.push(vertex.idx);
     _this.edgeGroup.line(new SVG.PointArray([vertex.pos, neightbor.pos]))
-                   .attr({
-                      'stroke': gridParams.color
-                    });
+                   .attr({'stroke': _this.gridParams.stroke, 'stroke-width': _this.gridParams.w});
+  });
+};
+
+Graph.prototype.toColor = function(fill, stroke, t) {
+  this.vertexesGroup.children().forEach(function (point) {
+    point.animate(t, 'sineIn').attr({fill: fill, stroke: stroke});
+  });
+  this.edgeGroup.children().forEach(function (line) {
+    line.animate(t, 'sineIn').attr({fill: fill, stroke: stroke});
   });
 };
 function getCirclePath(r) {
@@ -408,13 +489,16 @@ function getCirclePath(r) {
          'C0 ' + a + ' ' + a + ' 0 ' + b + ' 0 Z';
 };
 
-function MLCloud(draw) {
+function MLCloud(draw, cx, cy) {
   this.group = draw.group();
   this.group.backward();
 
   this.params = Object.assign({}, mlNodeCloudParams);
-  this.cx = this.params.cx;
-  this.cy = this.params.cy;
+  this.cx = cx;
+  this.cy = cy;
+  // this.cx = this.params.cx;
+  // this.cy = this.params.cy;
+  // console.log(draw)
 
   this.group.opacity(0).center(this.cx, this.cy);
 
@@ -518,7 +602,8 @@ MLCloud.prototype.receiveResponse = function(event) {
   }, true);
 };
 
-function MLNode(draw, vertex, event) {
+function MLNode(draw, vertex, fill, event) {
+  this.startColor = fill;
   this.hexParams = {
     'radius': 15,
     'edges': 6,
@@ -541,7 +626,7 @@ function MLNode(draw, vertex, event) {
 
   this.vertex = Object.assign({}, vertex);
   var neightborsIdxs = this.vertex.neightbors;
-  this.neightborsVertexes = VERTEXES.reduce(function (bucket, v) {
+  this.neightborsVertexes = VERTEXES_TANGLE.reduce(function (bucket, v) {
     if (neightborsIdxs.indexOf(v.idx) > -1) {
       bucket.push(Object.assign({}, v));
     }
@@ -569,7 +654,7 @@ MLNode.prototype.drawShadow = function() {
 MLNode.prototype.drawHex = function() {
   var params = {edges: this.hexParams.edgesStart, radius: 0.1};
   var hex = this.group.polygon().ngon(params);
-  hex.attr(this.hexParams).fill(gridParams.color).center(this.cx, this.cy);
+  hex.attr(this.hexParams).fill(this.startColor).center(this.cx, this.cy);
   return hex;
 };
 
@@ -586,7 +671,7 @@ MLNode.prototype.show = function(event) {
   for (var i = this.hexParams.edgesStart; i <= this.hexParams.edges; i++) {
     ngonParams.edges = i;
     this.hex.animate(hexT).ngon(ngonParams).center(this.cx, this.cy)
-                          .fill(i > 4 ? this.hexParams.fill : gridParams.color);
+                          .fill(i > 4 ? this.hexParams.fill : this.startColor);
   }
 
   this.shadow.animate(shadowT, 'backOut').attr(this.shadowParams)
@@ -631,12 +716,12 @@ MLNode.prototype.connectToOther = function(nodes, event) {
   });
 };
 
-MLNode.prototype.moveToCenter = function(showCloud, event) {
+MLNode.prototype.moveToCenter = function(cx, cy, showCloud, event) {
   this.lineGroup.animate(100).opacity(0);
 
   var cloudParams = Object.assign({}, mlNodeCloudParams);
-  var dx = cloudParams.cx - this.cx;
-  var dy = cloudParams.cy - this.cy;
+  var dx = cx - this.cx;
+  var dy = cy - this.cy;
   var t1 = 250, t2 = 500;
 
   var _this = this;
@@ -693,77 +778,263 @@ var Random = {
   }
 };
 
-var VERTEXES = [
-  {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
-  {idx: 2, neightbors: [3, 6], pos: [137, 25]},
-  {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
-  {idx: 4, neightbors: [5, 8], pos: [361, 25]},
-  {idx: 5, neightbors: [9, 10], pos: [475, 25]},
-
-  {idx: 6, neightbors: [11, 12], pos: [25, 108]},
-  {idx: 7, neightbors: [13], pos: [137, 108]},
-  {idx: 8, neightbors: [9, 13], pos: [255, 108]},
-  {idx: 9, neightbors: [14, 20], pos: [361, 108]},
-  {idx: 10, neightbors: [15], pos: [475, 108]},
-
-  {idx: 11, neightbors: [12, 18], pos: [25, 192]},
-  {idx: 12, neightbors: [13, 17, 18], pos: [97, 192]},
-  {idx: 13, neightbors: [14, 19], pos: [170, 192]},
-  {idx: 14, neightbors: [15], pos: [242, 192]},
-  {idx: 15, neightbors: [16], pos: [413, 192]},
-  {idx: 16, neightbors: [20, 21], pos: [475, 192]},
-
-  {idx: 17, neightbors: [18], pos: [25, 275]},
-  {idx: 18, neightbors: [19], pos: [137, 275]},
-  {idx: 19, neightbors: [20], pos: [255, 275]},
-  {idx: 20, neightbors: [21], pos: [361, 275]},
-  {idx: 21, neightbors: [], pos: [475, 275]},
-];
-
-
-var mlHosts = [2, 4, 6, 9, 18, 21];
-var agentHosts = [2, 4, 9, 12, 18, 21];
-
-var agentsColors = [
-  'rgb(255, 191, 0)',  // orange
-  'rgb(0, 255, 191)', // blue
-  'rgb(191, 255, 0)', // yellow
-  'rgb(75, 255, 0)',  // green
-  'rgb(255, 64, 255)', // purple
-  'rgb(255, 0, 106)',  // red
-];
-
-var gridParams = {
-  r: 12,
-  color: '#2c9b5a',
-};
-
- var mlNodeCloudParams = {
-  // logo
-  logoPath: 'dist/l4.png',
-  logoW: 50,
-  // main
-  r: 30,
-  // color: '#00fff5',
-  color: '#00d6ff',
-  edges: 8,
-  cx: 250,
-  cy: 150,
-  // shadow
-  shadowK: 1.3,
-  shadowOpacity: 0.3,
-};
-function createTangle(parent) {
-  var bounds = parent.getBoundingClientRect();
+function createSalesMan() {
+  var parent = document.querySelector('#secondPage .main');
+  // var bounds = parent.getBoundingClientRect();
   var svgId = parent.getAttribute('id');
-  var tangle = new Tangle(svgId, bounds);
+  var salesman = new SalesMan(svgId);
+}
+
+
+function SalesMan(svgId, bounds) {
+  this.svgId = svgId;
+  // this.bounds = bounds;
+
+  this.createSVG();
+  this.drawML();
+  this.drawWHouses();
+  this.linkWHouses();
+  this.drawShops();
+  this.linkShops();
+
+  this.drawCars();
+}
+
+SalesMan.prototype.createSVG = function() {
+  this.draw = SVG(this.svgId);
+  this.graph = new Graph(this.draw, VERTEXES_SALESMAN, gridParams_SALESMAN);
+
+  var greenGroup = this.draw.group();
+  greens_SALESMAN.forEach(function (d) {
+    greenGroup.path(d).fill('#d0e7ae');
+  });
+  fountains_SALESMAN.forEach(function (pos) {
+    greenGroup.image('https://www.shareicon.net/download/2016/06/07/777008_garden.svg', 24, 24)
+              .center(pos[0], pos[1]).opacity(0.25);
+  });
+
+  greenGroup.image('https://www.shareicon.net/download/2016/05/31/773385_tree.svg', 30, 30)
+              .center(290, 55).opacity(0.4);
+  greenGroup.image('https://www.shareicon.net/download/2016/05/31/773393_tree.svg', 30, 30)
+              .center(325, 165).opacity(0.4);
+  greenGroup.image('https://www.shareicon.net/download/2016/05/30/773368_tree.svg', 30, 30)
+              .center(360, 245).opacity(0.4);
+  greenGroup.image('https://www.shareicon.net/download/2016/01/28/710377_oriental.svg', 35, 35)
+              .center(400, 257).opacity(0.25);
+  greenGroup.image('https://www.shareicon.net/download/2016/05/31/773373_tree.svg', 30, 30)
+              .center(60, 160).opacity(0.4);
+  greenGroup.image('https://www.shareicon.net/download/2016/01/28/710253_art.svg', 35, 35)
+              .center(160, 295).opacity(0.25);
+  greenGroup.image('https://www.shareicon.net/download/2016/05/31/773371_tree.svg', 30, 30)
+              .center(110, 330).opacity(0.4);
+};
+
+SalesMan.prototype.drawML = function() {
+  this.mlCloud = new MLCloud(this.draw, 250, 192.5);
+  this.mlCloud.show();
+};
+
+SalesMan.prototype.drawWHouses = function() {
+  this.whouses = [];
+  var whousesGroup = this.draw.group();
+  this.mlCloud.group.before(whousesGroup);
+
+  var _this = this;
+  VERTEXES_SALESMAN.forEach(function (vertex, i) {
+    if (whouses_SALESMAN.indexOf(vertex.idx) > -1) {
+      // var isLast = (_this.whouses.length + 1) == whouses_SALESMAN.length;
+      var color = whouses_colors_SALESMAN[_this.whouses.length];
+      var whouse = new WHouse(whousesGroup, vertex, _this.mlCloud.cx, _this.mlCloud.cy, color);
+      _this.whouses.push(whouse);
+    }
+  });
+};
+
+SalesMan.prototype.linkWHouses = function() {
+  var _this = this;
+  this.whouses.forEach(function (whouse) {
+    whouse.showLink();
+  });
+};
+
+
+SalesMan.prototype.drawShops = function() {
+  this.shops = [];
+  var shopsGroup = this.draw.group();
+  this.mlCloud.group.before(shopsGroup);
+
+  var _this = this;
+  VERTEXES_SALESMAN.forEach(function (vertex, i) {
+    if (shops_SALESMAN.indexOf(vertex.idx) > -1) {
+      // var isLast = (_this.whouses.length + 1) == whouses_SALESMAN.length;
+      var color = shops_colors_SALESMAN[_this.shops.length];
+      var shop = new Shop(shopsGroup, vertex, _this.mlCloud.cx, _this.mlCloud.cy, color);
+      _this.shops.push(shop);
+    }
+  });
+};
+
+SalesMan.prototype.linkShops = function() {
+  var _this = this;
+  this.shops.forEach(function (shop) {
+    shop.showLink();
+  });
+};
+
+SalesMan.prototype.drawCars = function() {
+  this.cars = [];
+  var carsGroup = this.draw.group();
+
+  var _this = this;
+  var cars_SALESMAN = Random.shuffle(VERTEXES_SALESMAN).slice(0, 3);
+  // var cars_SALESMAN = [VERTEXES_SALESMAN[1]];
+  cars_SALESMAN.forEach(function (vertex, i) {
+    var color = cars_color_SALESMAN[i];
+    var car = new Car(carsGroup, vertex, _this.graph, color);
+    _this.cars.push(car);
+  });
+};
+var VERTEXES_SALESMAN = [
+  {idx: 1, neightbors: [2, 6], pos: [45, 45]},
+  {idx: 2, neightbors: [3, 7], pos: [137, 25]},
+  {idx: 3, neightbors: [4, 7], pos: [255, 25]},
+  {idx: 4, neightbors: [7, 9], pos: [450, 35]},
+
+  {idx: 5, neightbors: [6, 10, 11], pos: [45, 120]},
+  {idx: 6, neightbors: [7, 11], pos: [150, 108]},
+  {idx: 7, neightbors: [], pos: [265, 100]},
+  {idx: 8, neightbors: [9, 11, 12, 13], pos: [350, 108]},
+  {idx: 9, neightbors: [13], pos: [475, 108]},
+
+  {idx: 10, neightbors: [11, 14], pos: [25, 192]},
+  {idx: 11, neightbors: [15], pos: [127, 182]},
+  {idx: 12, neightbors: [16, 18], pos: [350, 200]},
+  {idx: 13, neightbors: [18], pos: [465, 192]},
+
+  {idx: 14, neightbors: [15], pos: [25, 275]},
+  {idx: 15, neightbors: [16, 19], pos: [160, 250]},
+  {idx: 16, neightbors: [17, 20, 21], pos: [255, 275]},
+  {idx: 17, neightbors: [18, 21, 22], pos: [361, 285]},
+  {idx: 18, neightbors: [], pos: [475, 275]},
+
+  {idx: 19, neightbors: [20], pos: [25, 358]},
+  {idx: 20, neightbors: [], pos: [157, 358]},
+  {idx: 21, neightbors: [22], pos: [240, 358]},
+  {idx: 22, neightbors: [], pos: [455, 338]},
+];
+
+var greens_SALESMAN = [
+  'M26 68 l45 3 l 32 26 l -67 15 Z',
+  'M42 207 l57 -13 l 37 25 l 12 26 l -70 10  l -35 -10 Z',
+  'M356 75 l50 -16 l 32 11 l -17 25 l -80 5 Z',
+  'M357 142 l10 -11 l 88 61 l 10 54 l -10 10 l -80 -54 Z',
+];
+
+var fountains_SALESMAN = [
+  [155, 70],
+  [275, 305],
+];
+
+
+
+var whouses_SALESMAN = [4, 14, 21];
+var whouses_colors_SALESMAN = [
+  '#388e3c',  // green
+  '#8bc34a', // lightgreen
+  '#9e9d24', // lime
+];
+
+var shops_SALESMAN = [1, 11, 12, 20, 22];
+var shops_colors_SALESMAN = [
+  '#3f51b5',  // indigo
+  '#03a9f4', // light-blue
+  '#00838f',  // cyan
+  '#9575cd',  // deep-purple
+  '#e040fb', // purple
+];
+
+var cars_color_SALESMAN = [
+  '#ef5350',
+  '#ff5722',
+  '#ff9800',
+];
+
+var gridParams_SALESMAN = {
+  r: 5,
+  sw: 1,
+  w: 6,
+  // bg: 'rgba(234, 230, 220, 0.8)',
+  fill: '#ffc133',
+  stroke: '#ffc133',
+  // color: '#2c9b5a',
+  // color: 'yellow',
+  // color: '#f1f1b8',
+  // color: '#b3f7ad',
+};
+function Shop(draw, vertex, cx, cy, color) {
+  this.cx = vertex.pos[0];
+  this.cy = vertex.pos[1];
+  this.color = color;
+
+  this.group = draw.group();
+  this.link = new AgentLine(this.group, cx, cy, vertex, this.color);
+  // this.drawCircle(gridParams_SALESMAN.fill, '#f5da98', 1);
+  this.drawCircle(this.color, '#f5da98', 1);
+  // this.drawCircle(this.color, this.color, 0.6);
+  // this.img = this.group.image(
+  //   'https://www.shareicon.net/download/2016/01/23/707839_shopping.svg',
+  //   24, 24).center(this.cx, this.cy);
+  this.img = this.drawImg();
+  // this.drawCircle(this.color, 0.15);
+  // this.group.plain('S').font({
+  //   'fill': this.color,
+  //   'family': 'Rajdhani',
+  //   'weight': 'bold',
+  //   'size': '14px'
+  // }).center(this.cx, this.cy);
+};
+
+Shop.prototype.drawImg = function() {
+  var img = this.group.group();
+  // img.fill(this.color);
+  img.opacity(0.65);
+  img.path("M485.6,463.384c0-13.417-10.871-24.288-24.279-24.288h-10.25V204.002h-0.008c-12.6,0-24.517-4.109-34.442-11.037 c-6.673,4.704-14.353,8.18-22.867,9.87c-3.895,0.778-7.869,1.167-11.797,1.167c-2.619,0-5.133-0.35-7.681-0.683v46.367H261.104 v-48.508c-5.507,1.649-11.235,2.816-17.281,2.816c-6.03,0-11.751-1.166-17.265-2.816v48.508H113.386V203.32 c-2.538,0.333-5.07,0.683-7.687,0.683c-3.903,0-7.863-0.389-11.838-1.175c-8.49-1.69-16.155-5.158-22.835-9.862 c-9.925,6.927-21.826,11.037-34.417,11.037h-0.008v235.094H26.35c-13.417,0-24.286,10.871-24.286,24.288 c0,13.417,10.869,24.286,24.286,24.286H461.32C474.729,487.67,485.6,476.801,485.6,463.384z M374.276,284.224v55.071 c0,10.718-8.68,19.398-19.406,19.398h-93.765v-74.47H374.276z M226.559,284.224v74.47h-93.766c-10.719,0-19.408-8.68-19.408-19.398 v-55.071H226.559z");
+  img.path("M26.723,176.645c3.292,0.983,6.617,1.451,9.893,1.451c14.869,0,28.603-9.679,33.078-24.666l1.816-6.07 c1.23,11.021,7.673,20.732,17.312,26.167c3.11,1.729,6.426,3.157,10.108,3.887c2.277,0.462,4.546,0.682,6.776,0.682 c16.145,0,30.578-11.369,33.839-27.809l0.842-4.212c0.864,11.718,7.577,22.041,17.557,27.618c4.007,2.246,8.515,3.729,13.386,4.222 c1.165,0.126,2.324,0.175,3.466,0.175c17.528,0,32.547-13.298,34.331-31.119l0.255-2.563c0.316,12.583,7.362,23.382,17.677,29.157 c4.982,2.794,10.654,4.524,16.764,4.524c6.132,0,11.798-1.73,16.78-4.524c10.307-5.775,17.36-16.574,17.686-29.157l0.245,2.563 c1.786,17.82,16.797,31.119,34.331,31.119c1.15,0,2.301-0.049,3.468-0.175c4.863-0.493,9.371-1.976,13.392-4.222 c9.974-5.577,16.695-15.9,17.542-27.618l0.842,4.212c3.276,16.447,17.7,27.809,33.839,27.809c2.237,0,4.498-0.221,6.784-0.682 c3.664-0.73,6.997-2.158,10.092-3.887c9.655-5.436,16.098-15.146,17.328-26.167l1.816,6.07 c4.476,14.987,18.209,24.666,33.085,24.666c3.27,0,6.594-0.468,9.886-1.451c18.289-5.46,28.682-24.707,23.224-42.979 l-29.539-98.851C448.453,14.155,429.45,0,407.894,0H79.778C58.212,0,39.21,14.155,33.038,34.815L3.506,133.666 C-1.952,151.939,8.443,171.186,26.723,176.645z");
+  img.center(this.cx + 2, this.cy - 1);
+  img.scale(0.052);
+  return img;
+};
+
+Shop.prototype.drawCircle = function(stroke, fill, op) {
+  var circle = this.group.circle().attr({
+    'r': 20,
+    // 'fill': '#f8d27b',
+    'fill': fill,
+    'fill-opacity': op,
+    'stroke': stroke,
+    'stroke-width': 3
+  }).center(this.cx, this.cy);
+  return circle;
+};
+
+Shop.prototype.showLink = function() {
+  var _this = this;
+  this.link.show(function () {
+    _this.link.opacity(0.25);
+  });
+};
+function createTangle() {
+  var parent = document.querySelector('#firstPage .svg');
+  // var bounds = parent.getBoundingClientRect();
+  var svgId = parent.getAttribute('id');
+  var tangle = new Tangle(svgId);
 }
 
 function Tangle(svgId, bounds) {
   this.svgId = svgId;
-  this.bounds = bounds;
+  // this.bounds = bounds;
 
-  this.description = document.querySelector('#protocolDescription');
+  this.description = document.querySelector('#firstPage .description [protocol]');
 
   this.run();
 }
@@ -891,9 +1162,9 @@ Tangle.prototype.createSVG = function(event) {
   this.draw = SVG(this.svgId);
   this.draw.addClass('overflowed');
 
-  this.graph = new Graph(this.draw);
+  this.graph = new Graph(this.draw, VERTEXES_TANGLE, gridParams_TANGLE);
 
-  this.mlCloud = new MLCloud(this.draw);
+  this.mlCloud = new MLCloud(this.draw, 250, 150);
   event();
 };
 
@@ -908,12 +1179,13 @@ Tangle.prototype.drawmlHosts = function(event) {
   var mlhostGroup = this.draw.group();
 
   var _this = this, t = 0;
-  VERTEXES.forEach(function (vertex, i) {
-    if (mlHosts.indexOf(vertex.idx) > -1) {
+  this.graph.toColor(gridParams_TANGLE.fill1, gridParams_TANGLE.stroke1, 4500);
+  VERTEXES_TANGLE.forEach(function (vertex, i) {
+    if (mlHosts_TANGLE.indexOf(vertex.idx) > -1) {
 
       setTimeout(function () {
-        var isLast = (_this.mlHosts.length + 1) == mlHosts.length;
-        var mlhost = new MLNode(mlhostGroup, vertex, isLast && event);
+        var isLast = (_this.mlHosts.length + 1) == mlHosts_TANGLE.length;
+        var mlhost = new MLNode(mlhostGroup, vertex, gridParams_TANGLE.fill, isLast && event);
         _this.mlHosts.push(mlhost);
       }, t);
 
@@ -939,12 +1211,14 @@ Tangle.prototype.mlClusterToCenter = function(event) {
 
   this.mlHosts.forEach(function (node, i) {
     var isLast = i == _this.mlHosts.length - 1;
-    node.moveToCenter(isLast && showCloud, isLast && event);
+    node.moveToCenter(_this.mlCloud.cx, _this.mlCloud.cy,
+                      isLast && showCloud,
+                      isLast && event);
   });
 };
 
 Tangle.prototype.drawAgents = function(event) {
-  this.agents = []; // alll
+  this.agents = [];
 
   var agentGroup = this.draw.group();
   this.graph.vertexesGroup.before(agentGroup);
@@ -952,12 +1226,12 @@ Tangle.prototype.drawAgents = function(event) {
   var _colors = Random.shuffle(agentsColors);
 
   var _this = this;
-  VERTEXES.forEach(function (vertex, i) {
-    if (agentHosts.indexOf(vertex.idx) > -1) {
-      var isLast = (_this.agents.length + 1) == agentHosts.length;
+  VERTEXES_TANGLE.forEach(function (vertex, i) {
+    if (agentHosts_TANGLE.indexOf(vertex.idx) > -1) {
+      var isLast = (_this.agents.length + 1) == agentHosts_TANGLE.length;
       var color = _colors[_this.agents.length];
       var agent = new Agent(
-        agentGroup, vertex, color,
+        agentGroup, _this.mlCloud.cx, _this.mlCloud.cy, vertex, color,
         isLast && event,
         _this.mlCloud
       );
@@ -1057,4 +1331,134 @@ Tangle.prototype.clear = function(event) {
     event();
   }, 300);
 
+};
+
+var VERTEXES_TANGLE = [
+  {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
+  {idx: 2, neightbors: [3, 6], pos: [137, 25]},
+  {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
+  {idx: 4, neightbors: [5, 8], pos: [361, 25]},
+  {idx: 5, neightbors: [9, 10], pos: [475, 25]},
+
+  {idx: 6, neightbors: [11, 12], pos: [25, 108]},
+  {idx: 7, neightbors: [13], pos: [137, 108]},
+  {idx: 8, neightbors: [9, 13], pos: [255, 108]},
+  {idx: 9, neightbors: [14, 20], pos: [361, 108]},
+  {idx: 10, neightbors: [15], pos: [475, 108]},
+
+  {idx: 11, neightbors: [12, 18], pos: [25, 192]},
+  {idx: 12, neightbors: [13, 17, 18], pos: [97, 192]},
+  {idx: 13, neightbors: [14, 19], pos: [170, 192]},
+  {idx: 14, neightbors: [15], pos: [242, 192]},
+  {idx: 15, neightbors: [16], pos: [413, 192]},
+  {idx: 16, neightbors: [20, 21], pos: [475, 192]},
+
+  {idx: 17, neightbors: [18], pos: [25, 275]},
+  {idx: 18, neightbors: [19], pos: [137, 275]},
+  {idx: 19, neightbors: [20], pos: [255, 275]},
+  {idx: 20, neightbors: [21], pos: [361, 275]},
+  {idx: 21, neightbors: [], pos: [475, 275]},
+];
+
+
+var mlHosts_TANGLE = [2, 4, 6, 9, 18, 21];
+var agentHosts_TANGLE = [2, 4, 9, 12, 18, 21];
+
+var agentsColors = [
+  'rgb(255, 191, 0)',  // orange
+  'rgb(0, 255, 191)', // blue
+  'rgb(191, 255, 0)', // yellow
+  'rgb(75, 255, 0)',  // green
+  'rgb(255, 64, 255)', // purple
+  'rgb(255, 0, 106)',  // red
+];
+
+var gridParams_TANGLE = {
+  r: 12,
+  w: 1,
+  sw: 1,
+  fill1: '#6f8b82',
+  stroke1: '#5d7e74',
+  fill: '#2bd46c',
+  stroke: '#2bd46c',
+  // color: '#2c9b5a',
+  // color: 'yellow',
+  // color: '#f1f1b8',
+  // color: '#b3f7ad',
+};
+
+ var mlNodeCloudParams = {
+  // logo
+  logoPath: 'dist/logo/l4.png',
+  logoW: 50,
+  // main
+  r: 30,
+  // color: '#00fff5',
+  color: '#00d6ff',
+  edges: 8,
+  // shadow
+  shadowK: 1.3,
+  shadowOpacity: 0.3,
+};
+function WHouse(draw, vertex, cx, cy, color) {
+  this.cx = vertex.pos[0];
+  this.cy = vertex.pos[1];
+  this.color = color;
+
+  this.group = draw.group();
+  this.link = new AgentLine(this.group, cx, cy, vertex, this.color);
+  // this.drawCircle(gridParams_SALESMAN.fill, '#f5da98', 1);
+  this.drawCircle(this.color, '#f5da98', 1);
+  // this.drawCircle(this.color, this.color, 0.6);
+  this.img = this.drawImg();
+  // this.img = this.group.image(
+  //   'https://www.shareicon.net/download/2016/04/04/744533_boxes.svg',
+  //   30, 30).center(this.cx, this.cy - 2);
+  // this.drawCircle(this.color, 0.15);
+  // this.group.plain('W').font({
+  //   'fill': this.color,
+  //   'family': 'Rajdhani',
+  //   'weight': 'bold',
+  //   'size': '14px'
+  // }).center(this.cx, this.cy);
+};
+
+WHouse.prototype.drawImg = function() {
+  var img = this.group.group();
+  img.opacity(0.65);
+  // img.fill(this.color);
+  img.path("M475,355h-15V200c0-8.284-6.716-15-15-15h-85V30c0-8.284-6.716-15-15-15H145c-8.284,0-15,6.716-15,15v155 H45c-8.284,0-15,6.716-15,15v155H15c-8.284,0-15,6.716-15,15v90c0,8.284,6.716,15,15,15h60c8.284,0,15-6.716,15-15v-15h110v15 c0,8.284,6.716,15,15,15h60c8.284,0,15-6.716,15-15v-15h110v15c0,8.284,6.716,15,15,15h60c8.284,0,15-6.716,15-15v-90 C490,361.716,483.284,355,475,355z M430,215v140H260V215H430z M160,45h170v140H160V45z M60,215h170v140H60V215z M460,445h-30v-15 c0-8.284-6.716-15-15-15H275c-8.284,0-15,6.716-15,15v15h-30v-15c0-8.284-6.716-15-15-15H75c-8.284,0-15,6.716-15,15v15H30v-60h430 V445z");
+  img.center(this.cx, this.cy - 16);
+  img.scale(0.055);
+  return img;
+};
+
+// WHouse.prototype.drawCircle = function(color, op) {
+//   var circle = this.group.rect().attr({
+//     'width': 9 * 2,
+//     'height': 9 * 2,
+//     'fill': color,
+//     'fill-opacity': op,
+//     'stroke': color,
+//     'stroke-width': 2
+//   }).center(this.cx, this.cy);
+//   return circle;
+// };
+WHouse.prototype.drawCircle = function(stroke, fill, op) {
+  var circle = this.group.circle().attr({
+    'r': 20,
+    // 'fill': '#f8d27b',
+    'fill': fill,
+    'fill-opacity': op,
+    'stroke': stroke,
+    'stroke-width': 3
+  }).center(this.cx, this.cy);
+  return circle;
+};
+
+WHouse.prototype.showLink = function() {
+  var _this = this;
+  this.link.show(function () {
+    _this.link.opacity(0.25);
+  });
 };

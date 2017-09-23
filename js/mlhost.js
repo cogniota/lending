@@ -1,4 +1,5 @@
-function MLNode(draw, vertex, event) {
+function MLNode(draw, vertex, fill, event) {
+  this.startColor = fill;
   this.hexParams = {
     'radius': 15,
     'edges': 6,
@@ -21,7 +22,7 @@ function MLNode(draw, vertex, event) {
 
   this.vertex = Object.assign({}, vertex);
   var neightborsIdxs = this.vertex.neightbors;
-  this.neightborsVertexes = VERTEXES.reduce(function (bucket, v) {
+  this.neightborsVertexes = VERTEXES_TANGLE.reduce(function (bucket, v) {
     if (neightborsIdxs.indexOf(v.idx) > -1) {
       bucket.push(Object.assign({}, v));
     }
@@ -49,7 +50,7 @@ MLNode.prototype.drawShadow = function() {
 MLNode.prototype.drawHex = function() {
   var params = {edges: this.hexParams.edgesStart, radius: 0.1};
   var hex = this.group.polygon().ngon(params);
-  hex.attr(this.hexParams).fill(gridParams.color).center(this.cx, this.cy);
+  hex.attr(this.hexParams).fill(this.startColor).center(this.cx, this.cy);
   return hex;
 };
 
@@ -66,7 +67,7 @@ MLNode.prototype.show = function(event) {
   for (var i = this.hexParams.edgesStart; i <= this.hexParams.edges; i++) {
     ngonParams.edges = i;
     this.hex.animate(hexT).ngon(ngonParams).center(this.cx, this.cy)
-                          .fill(i > 4 ? this.hexParams.fill : gridParams.color);
+                          .fill(i > 4 ? this.hexParams.fill : this.startColor);
   }
 
   this.shadow.animate(shadowT, 'backOut').attr(this.shadowParams)
@@ -111,12 +112,12 @@ MLNode.prototype.connectToOther = function(nodes, event) {
   });
 };
 
-MLNode.prototype.moveToCenter = function(showCloud, event) {
+MLNode.prototype.moveToCenter = function(cx, cy, showCloud, event) {
   this.lineGroup.animate(100).opacity(0);
 
   var cloudParams = Object.assign({}, mlNodeCloudParams);
-  var dx = cloudParams.cx - this.cx;
-  var dy = cloudParams.cy - this.cy;
+  var dx = cx - this.cx;
+  var dy = cy - this.cy;
   var t1 = 250, t2 = 500;
 
   var _this = this;
