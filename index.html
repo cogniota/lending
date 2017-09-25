@@ -27,7 +27,8 @@
 
   </script>
 </head>
-<body>
+
+<body class="secondPage">
   <div id="firstPage">
     <header>
       <div class="title">
@@ -39,59 +40,72 @@
         </div>
       </div>
     </header>
-    <div class="main">
-      <h1>Machine Learning as a service</h1>
 
-      <div>
-        <div class="description">
-          <div class="svg" id="svg1"></div>
-          <div protocol></div>
-        </div>
-      </div>
+    <h1>Machine Learning as a service</h1>
+
+    <div class="main">
+      <div class="svg" id="svg1"></div>
+      <div description></div>
     </div>
 
-    <footer>
-      <a id="protocolBtn">
-        <div class="main"></div>
-        <div class="arrow"></div>
+    <div>
+      <a class="btn" id="openProtocol">
+        See Protocol Example
       </a>
-      <div class="top"></div>
-      <div class="middle"></div>
-      <div class="bottom"></div>
-    </footer>
+    </div>
   </div>
 
   <div id="secondPage">
-    <div class="main" id="svg2">
-      <div class="console"></div>
+    <div class="content">
+      <div>
+        <div id="backToMain">
+          <- Back To The Concept
+        </div>
+      </div>
+
+      <div class="main">
+        <ul class="slideshow">
+          <li>
+            <div class="bg"></div>
+            <div class="svg">
+              <h2>Map Description</h2>
+            </div>
+          </li>
+          <!-- <li>
+            <div class="bg"></div>
+            <div class="svg">
+              <h2>Connection to the Cogniota</h2>
+            </div>
+          </li>
+          <li>
+            <div class="bg"></div>
+            <div class="svg">
+              <h2>A shop needs a good</h2>
+            </div>
+          </li>
+          <li>
+            <div class="bg"></div>
+            <div class="svg">
+              <h2>Cogniota's looking for the best provider</h2>
+            </div>
+          </li> -->
+        </ul>
+
+        <ul class="nav">
+          <li class="prev"></li>
+          <li class="play"></li>
+          <li class="next"></li>
+        </ul>
+      </div>
+
     </div>
   </div>
 
   <script type="text/javascript">
     (function() {
-      var h = 65, fp = document.querySelector('#firstPage').offsetHeight - h;
-      var btn = document.querySelector('#firstPage footer');
-      var a = btn.querySelector('#protocolBtn');
-      document.querySelector('#secondPage').style.height = window.innerHeight - h + 'px';
-
-      function setPage() {
-        if (this.scrollY == fp) {
-          btn.className = 'secondPage';
-          a.setAttribute('href', '#firstPage');
-          a.querySelector('.main').innerHTML = 'To the Concept';
-        } else {
-          btn.className = '';
-          a.setAttribute('href', '#secondPage');
-          a.querySelector('.main').innerHTML = 'Protocol Example';
-        }
-      }
-
-      window.onscroll = setPage;
-      setPage();
-
       if (SVG.supported) {
-        // createTangle();
-        // createSalesMan();
+        createTangle();
+        createSalesMan();
       } else {
         alert('SVG not supported');
       }

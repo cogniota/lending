@@ -9,7 +9,7 @@ function Tangle(svgId, bounds) {
   this.svgId = svgId;
   // this.bounds = bounds;
 
-  this.description = document.querySelector('#firstPage .description [protocol]');
+  this.description = document.querySelector('#firstPage .main [description]');
 
   this.run();
 }

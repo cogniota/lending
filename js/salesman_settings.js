@@ -27,19 +27,6 @@ var VERTEXES_SALESMAN = [
   {idx: 22, neightbors: [], pos: [455, 338]},
 ];
 
-var greens_SALESMAN = [
-  'M26 68 l45 3 l 32 26 l -67 15 Z',
-  'M42 207 l57 -13 l 37 25 l 12 26 l -70 10  l -35 -10 Z',
-  'M356 75 l50 -16 l 32 11 l -17 25 l -80 5 Z',
-  'M357 142 l10 -11 l 88 61 l 10 54 l -10 10 l -80 -54 Z',
-];
-
-var fountains_SALESMAN = [
-  [155, 70],
-  [275, 305],
-];
-
-
 
 var whouses_SALESMAN = [4, 14, 21];
 var whouses_colors_SALESMAN = [
@@ -57,6 +44,7 @@ var shops_colors_SALESMAN = [
   '#e040fb', // purple
 ];
 
+var cars_SALESMAN = [2, 9, 19];
 var cars_color_SALESMAN = [
   '#ef5350',
   '#ff5722',
@@ -67,11 +55,6 @@ var gridParams_SALESMAN = {
   r: 5,
   sw: 1,
   w: 6,
-  // bg: 'rgba(234, 230, 220, 0.8)',
-  fill: '#ffc133',
-  stroke: '#ffc133',
-  // color: '#2c9b5a',
-  // color: 'yellow',
-  // color: '#f1f1b8',
-  // color: '#b3f7ad',
+  fill: '#78909c',
+  stroke: '#78909c',
 };
