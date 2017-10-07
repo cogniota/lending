@@ -58,7 +58,7 @@
 
 
   AgentText.prototype.send = function(text, earlyStart) {
-    this.text.plot(text || '?').center(0, 0);
+    this.text.plain(text || '?').center(0, 0);
     this.group.move(this.sx, this.sy);
     var _this = this;
     return new Promise(function (resolve) {
@@ -84,7 +84,7 @@
   };
 
   AgentText.prototype.receive = function(text) {
-    this.text.plot(text || '?').center(0, 0);
+    this.text.plain(text || '?').center(0, 0);
     this.group.move(this.ex, this.ey);
     this.group.opacity(1);
 

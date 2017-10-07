@@ -60,7 +60,7 @@
     var _this = this;
     return new Promise(function (resolve) {
       return _this.activate(true, circleIn).then(function () {
-        return _this.text.send('?').then(resolve);
+        return _this.text.send(t).then(resolve);
       });
     });
   };

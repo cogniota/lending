@@ -283,8 +283,6 @@
     }
 
     var _this = this;
-    // var agents = [this.agents[1], this.agents[2], this.agents[4]];
-    // this.provider = agents[2];
 
     if (params.forced) {
       _this.provider.activate(false);
