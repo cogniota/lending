@@ -1,146 +1,187 @@
-function MLNode(draw, vertex, fill, event) {
-  this.startColor = fill;
-  this.hexParams = {
-    'radius': 15,
-    'edges': 6,
-    'edgesStart': 3,
-    // 'fill': '#00fff5',
-    'fill': '#00d6ff',
-  };
-  this.shadowParams = {
-    'radius': this.hexParams.radius * 1.3,
-    'edges': this.hexParams.edges,
-    'fill': this.hexParams.fill,
-    'opacity': 0.3,
-  };
-  this.lineParams = {
-    'stroke': this.hexParams.fill,
-    'stroke-width': 1.5,
-    'opacity': 0.7
-  };
+(function () {
+  'use strict';
 
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
-  this.vertex = Object.assign({}, vertex);
-  var neightborsIdxs = this.vertex.neightbors;
-  this.neightborsVertexes = VERTEXES_TANGLE.reduce(function (bucket, v) {
-    if (neightborsIdxs.indexOf(v.idx) > -1) {
-      bucket.push(Object.assign({}, v));
-    }
-    return bucket;
-  }, []);
-
-  this.group = draw.group();
-
-  this.cx = this.vertex.pos[0];
-  this.cy = this.vertex.pos[1];
-
-  this.shadow = this.drawShadow();
-  this.hex = this.drawHex();
-
-  this.show(event);
-}
-
-MLNode.prototype.drawShadow = function() {
-  var params = {edges: this.shadowParams.edges, radius: 0.1};
-  var shadow = this.group.polygon().ngon(params);
-  shadow.attr(this.shadowParams).center(this.cx, this.cy);
-  return shadow;
-};
-
-MLNode.prototype.drawHex = function() {
-  var params = {edges: this.hexParams.edgesStart, radius: 0.1};
-  var hex = this.group.polygon().ngon(params);
-  hex.attr(this.hexParams).fill(this.startColor).center(this.cx, this.cy);
-  return hex;
-};
-
-MLNode.prototype.show = function(event) {
-  var hexT = 100,
-      hexTotalT = ((this.hexParams.edges + 1) - this.hexParams.edgesStart) * hexT;
-  var shadowDelayAfter = 100,
-      shadowT = 300,
-      shadowDelayBefore = hexTotalT + shadowDelayAfter - shadowT;
-
-  this.shadow.delay(shadowDelayBefore);
-
-  var ngonParams = {edges: this.hexParams.edges, radius: this.hexParams.radius};
-  for (var i = this.hexParams.edgesStart; i <= this.hexParams.edges; i++) {
-    ngonParams.edges = i;
-    this.hex.animate(hexT).ngon(ngonParams).center(this.cx, this.cy)
-                          .fill(i > 4 ? this.hexParams.fill : this.startColor);
-  }
-
-  this.shadow.animate(shadowT, 'backOut').attr(this.shadowParams)
-                                         .ngon(this.shadowParams)
-                                         .center(this.cx, this.cy)
-             .once(1, function () {event && event(); });
-};
-
-MLNode.prototype.connectToOther = function(nodes, event) {
-  this.lineGroup = this.group.group();
-
-  var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
-
-  var _this = this;
-  var raised = false;
-  function createLine(s, e) {
-    var l = _this.lineGroup.line(new SVG.PointArray([s, s]));
-    l.attr(_this.lineParams).opacity(0.3);
-
-    var middle = [
-      s[0] - ((s[0] - e[0]) / 2),
-      s[1] - ((s[1] - e[1]) / 2)
-    ];
-    l.animate(t1, 'sineOut').plot(new SVG.PointArray([s, middle]));
-
-    l.delay(d1).animate(t2, 'sineOut').attr({'opacity': 1});
-    l.animate(t3, 'sineIn').attr(_this.lineParams)
-     .once(1, function () {
-      // animations are simultaneous so there is no need to check which is the last
-      if (event && raised === false) {
-        raised = true;
-        event();
-      }
-     });
-  }
-
-  nodes.forEach(function (node, i) {
-    if (node.vertex.idx != _this.vertex.idx) {
-      createLine(_this.vertex.pos, node.vertex.pos);
-      createLine(node.vertex.pos, _this.vertex.pos);
-    }
-  });
-};
-
-MLNode.prototype.moveToCenter = function(cx, cy, showCloud, event) {
-  this.lineGroup.animate(100).opacity(0);
-
-  var cloudParams = Object.assign({}, mlNodeCloudParams);
-  var dx = cx - this.cx;
-  var dy = cy - this.cy;
-  var t1 = 250, t2 = 500;
-
-  var _this = this;
-  function move(elem, params) {
-    elem.animate(t1, '<>').ngon(ngonParams).center(_this.cx, _this.cy).once(1, function () {
-      if (showCloud) {
-        showCloud();
-        showCloud = undefined;
-      }
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
     });
-    elem.animate(t2, '>').scale(1.5).opacity(0).center(_this.cx, _this.cy).once(1, function () {
-      if (event) {
-        event();
-        event = undefined;
-      }
-    });;
   }
 
-  var ngonParams = {radius: cloudParams.r, edges: cloudParams.edges};
-  move(this.hex, ngonParams);
+  var HEX_SETTINGS = {
+    fill: '#00d6ff',
+    edges: 6,
+    edgesStart: 3,
+    radius: 15,
+  };
 
-  ngonParams.radius = cloudParams.r * cloudParams.shadowK;
-  move(this.shadow, ngonParams);
+  var SHADOW_SETTINGS = {
+    fill: HEX_SETTINGS.fill,
+    edges: HEX_SETTINGS.edges,
+    radius: HEX_SETTINGS.radius * 1.3,
+    opacity: 0.3,
+  };
 
-  this.group.animate(t1, 'backIn').dmove(dx, dy);
-};
+  var LINE_SETTINGS = {
+    stroke: HEX_SETTINGS.fill,
+    'stroke-width': 1.5,
+    opacity: 0.7,
+  };
+
+  function MLHost(draw, vertex) {
+    this.cx = vertex.pos[0];
+    this.cy = vertex.pos[1];
+
+    this.HIDE_PARAMS = {
+      edges: HEX_SETTINGS.edgesStart,
+      radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+      fill: TangleCognIOTA.GRAPH_SETTINGS.stroke
+    };
+
+    this.group = draw.group().width(100);
+    this.shadow = this.drawShadow();
+    this.hex = this.drawHex(MLCloud.fill);
+  }
+
+  MLHost.prototype.drawShadow = function() {
+    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS).opacity(0);
+    var _this = this;
+    setTimeout(function () {
+      shadow.center(_this.cx, _this.cy).attr(SHADOW_SETTINGS)
+    }, 10);
+    return shadow;
+  };
+
+  MLHost.prototype.drawHex = function() {
+    var hex = this.group.polygon().ngon(HEX_SETTINGS).opacity(0);
+    // it takes a little to change the path
+    hex.attr(HEX_SETTINGS);
+    var _this = this;
+    setTimeout(function () {
+      hex.center(_this.cx, _this.cy).opacity(1)
+    }, 10);
+    return hex;
+  };
+
+  MLHost.prototype.showHex = function() {
+    var t1 = 70;
+
+    this.hex.fill(this.HIDE_PARAMS.fill);
+
+    var r = TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+        edges = HEX_SETTINGS.edgesStart;
+
+    var steps = HEX_SETTINGS.edges - HEX_SETTINGS.edgesStart,
+        rStep = (HEX_SETTINGS.radius - r) / steps,
+        totalT = t1 * steps;
+
+    for (; edges <= HEX_SETTINGS.edges; edges++, r+=rStep) {
+      var hexAnimation = this.hex.animate(t1);
+      hexAnimation.ngon({edges: edges, radius: r}).center(this.cx, this.cy);
+      if (edges >= HEX_SETTINGS.edges - 1) {
+        hexAnimation.fill(HEX_SETTINGS.fill);
+      }
+    }
+
+    return promise(t1 * steps);
+  };
+
+  MLHost.prototype.showShadow = function() {
+    var t = 300, d = 80;
+    this.shadow.delay(100)
+               .animate(300, 'backOut')
+                .ngon({edges: SHADOW_SETTINGS.edges, radius: SHADOW_SETTINGS.radius})
+                .center(this.cx, this.cy);
+
+    return promise(t + d);
+  };
+
+  MLHost.prototype.hide = function() {
+    this.hex.ngon(this.HIDE_PARAMS)
+            .fill('transparent')
+            .opacity(1).center(this.cx, this.cy);
+
+    this.shadow.ngon({edges: SHADOW_SETTINGS.edges, radius: 0.1})
+               .opacity(SHADOW_SETTINGS.opacity)
+               .center(this.cx, this.cy);
+  };
+
+  MLHost.prototype.show = function(animated) {
+    if (animated) {
+      var _this = this;
+      return new Promise(function (resolve) {
+        _this.showHex(animated).then(function () {
+          _this.showShadow(animated).then(resolve);
+        });
+      });
+    } else {
+      var params = {
+        edges: HEX_SETTINGS.edgesStart,
+        radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+        fill: TangleCognIOTA.GRAPH_SETTINGS.fill
+      };
+      this.hex.ngon(HEX_SETTINGS).center(this.cx, this.cy).attr(HEX_SETTINGS).opacity(1);
+      this.shadow.ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(this.cx, this.cy);
+      return NOOPPromise;
+    }
+  };
+
+  MLHost.prototype.connectTo = function(neightbors) {
+    var _this = this;
+
+    var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
+    var linesGroup = this.linesGroup = this.group.group();
+
+    neightbors.forEach(function (n) {
+      var pos = [_this.cx, _this.cy];
+      var line = linesGroup.line(new SVG.PointArray([pos, pos]));
+      line.attr(LINE_SETTINGS).opacity(0.3);
+
+      var middle = [
+        _this.cx - ((_this.cx - n.cx) / 2),
+        _this.cy - ((_this.cy - n.cy) / 2)
+      ];
+      line.animate(t1, 'sineOut').plot(new SVG.PointArray([pos, middle]));
+
+      line.delay(d1).animate(t2, 'sineOut').opacity(1);
+      line.animate(t3, 'sineIn').opacity(LINE_SETTINGS.opacity);
+    });
+
+    return promise(t1 + d1 + t2 + t3);
+  };
+
+  MLHost.prototype.toCenter = function(cx, cy) {
+    var t1 = 100, t2 = 250;
+    var _this = this;
+
+    this.linesGroup.animate(t1).opacity(0).once(1, function () {
+      _this.deleteLines();
+    });
+
+    this.hex.animate(t2, 'backIn').center(cx, cy);
+    this.shadow.animate(t2, 'backIn').center(cx, cy);
+
+    return promise(t2);
+  };
+
+  MLHost.prototype.disappear = function(cx, cy, r, e) {
+    var t1 = 300;
+    function disappear (elem, params) {
+      elem.animate(t1, '>').ngon({radius: r * 1.6, edges: e})
+                           .center(cx, cy)
+                           .opacity(0);
+    }
+
+    disappear(this.hex);
+    disappear(this.shadow);
+
+    return promise(t1);
+  };
+
+  MLHost.prototype.deleteLines = function() {
+    this.linesGroup.remove();
+  };
+
+  window.MLHost = MLHost;
+})();

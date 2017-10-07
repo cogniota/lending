@@ -1,86 +1,153 @@
- function Agent(draw, cx, cy, vertex, color, event, mlCloud) {
-  this.vertex = Object.assign({}, vertex);
-  this.mlCloud = mlCloud;
+(function () {
+  'use strict';
 
-  this.color = color;
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
-  this.group = draw.group();
-  this.circle = new AgentCircle(this.group, vertex, color);
-  this.circle.show();
+  function Agent(draw, params) {
+    this.cx = params.cx;
+    this.cy = params.cy;
+    this.color = params.color;
 
-  this.line = new AgentLine(this.group, cx, cy, vertex, color);
-  this.line.show(event);
+    this.group = draw.group();
+    this.idx = this.group.id();
 
-  this.text = new AgentText(this.group, this.line.array(), this.circle.r, color);
-}
+    params.cx = this.cx;
+    params.cy = this.cy;
 
-Agent.prototype.activate = function() {
-  this.circle.activate();
-  this.line.activate();
-};
-
-Agent.prototype.deactivate = function() {
-  this.circle.deactivate();
-  this.line.deactivate();
-  this.text.colorize(this.color);
-};
-
-////////
-
-Agent.prototype.sendRequest = function(event, animateCircle) {
-  var _this = this;
-  var distance = this.mlCloud.shadow.width() * 0.5;
-  if (animateCircle) {
-    this.circle.spinAround(function () {
-      _this.line.activate();
-      _this.text.sendRequest(event, distance);
-    }, true);
-  } else {
-    this.text.sendRequest(event, distance);
-  }
-};
-
-
-Agent.prototype.stopRequest = function(callback) {
-  var distance = this.mlCloud.hex.width() * 0.5;
-  this.text.stopRequest(callback);
-};
-
-// Agent.prototype.startContract = function(color) {
-//   this.circle.colorize(color);
-//   this.line.colorize(color);
-//   this.text.colorize(color);
-// };
-
-Agent.prototype.receiveRequest = function(color, event) {
-  var _this = this;
-
-  setTimeout(function () {
-    _this.circle.colorize(color);
-    _this.line.colorize(color);
-    _this.text.colorize(color);
-
-    _this.text.receiveRequest(event);
-    _this.line.fromCenter();
-  }, 570);
-};
-
-Agent.prototype.sendResponse = function(event) {
-  var _this = this;
-
-  function callback () {
-    _this.line.toCenter();
-    _this.text.sendResponse(event, distance);
+    this.line = new AgentLine(this.group, params);
+    this.text = new AgentText(this.group, params);
+    this.circle = new AgentCircle(this.group, params);
   }
 
-  var distance = this.mlCloud.shadow.width() * 0.5;
-  this.circle.spinAround(callback);
-};
+  Agent.prototype.hide = function(animated) {
+    this.circle.circleOut(animated);
+    this.line.hide();
+    this.group.opacity(0);
+  };
 
-Agent.prototype.receiveResponse = function(event) {
-  this.line.fromCenter();
-  var _this = this;
-  this.text.receiveResponse(function () {
-    _this.circle.spinAround(event);
-  });
-};
+  Agent.prototype.show = function(animated) {
+    this.group.opacity(1);
+
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.circle.circleIn(animated, {earlyStart: true, active: true}).then(function () {
+        _this.circle.deactivateBorder(true);
+        return _this.line.show(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.activate = function(animated, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      var circlePromise;
+      if (circleIn) {
+        circlePromise = _this._circleOutPromise({active: true});
+      } else {
+        circlePromise = NOOPPromise.then(function () {
+          _this.circle.activateBorder();
+        });
+      }
+      return circlePromise.then(function () {
+        _this.circle.activateBorder(animated);
+        _this.circle.showFill(animated);
+        return _this.line.activate(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype._send = function(t, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.activate(true, circleIn).then(function () {
+        return _this.text.send('?').then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.sendRequest = function() {
+    return this._send('?', true);
+  };
+
+  Agent.prototype.sendResponse = function() {
+    return this._send('!', false);
+  };
+
+  Agent.prototype._circleOutPromise = function(params) {
+    params = params || {};
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.circle.hideFill(true);
+      return _this.circle.circleOut(true).then(function () {
+        if (params.deactivate) {
+          _this.circle.deactivateBorder(true);
+        } else {
+          _this.circle.showFill(true);
+        }
+        return _this.circle.circleIn(true, {active: params.active}).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.deactivate = function(animated, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.line.deactivate(animated);
+      _this.circle.deactivateBorder(animated);
+      _this.circle.hideFill(animated);
+
+      var circlePromise;
+      if (circleIn) {
+        circlePromise = _this._circleOutPromise({deactivate: true});
+      } else {
+        circlePromise = NOOPPromise.then(function () {
+          _this.circle.hideFill(animated);
+          _this.circle.deactivateBorder();
+        });
+      }
+      return circlePromise.then(resolve);
+    });
+  };
+
+  Agent.prototype._receive = function(t) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.text.receive(t).then(function () {
+        return _this._circleOutPromise().then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.receiveResponse = function() {
+    return this._receive('!');
+  };
+
+  Agent.prototype.receiveRequest = function(first_argument) {
+    return this._receive('?');
+  };
+
+  Agent.prototype.colorize = function(color, reversed, animated) {
+    this.text.colorize(color);
+    var _this = this;
+
+    if (animated) {
+      return new Promise(function (resolve) {
+        var first = _this.line, second = _this.circle;
+        if (reversed) {
+          first = _this.circle, second = _this.line;
+        }
+        return first.colorize(color).then(function () {
+          return second.colorize(color).then(resolve);
+        });
+      });
+    } else {
+      this.line.colorize(color, false);
+      this.circle.colorize(color, false);
+      return NOOPPromise;
+    }
+
+  };
+
+  window.Agent = Agent;
+
+})();

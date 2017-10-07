@@ -1,112 +1,153 @@
-function MLCloud(draw, cx, cy) {
-  this.group = draw.group();
-  this.group.backward();
+(function () {
+  'use strict';
 
-  this.params = Object.assign({}, mlNodeCloudParams);
-  this.cx = cx;
-  this.cy = cy;
-  // this.cx = this.params.cx;
-  // this.cy = this.params.cy;
-  // console.log(draw)
-
-  this.group.opacity(0).center(this.cx, this.cy);
-
-  this.shadow = this.drawShadow();
-  this.hex = this.drawHex();
-
-  this.tmp = this.drawHex().scale(0.01).center(0, 0);
-
-  this.logo = this.drawLogo();
-}
-
-MLCloud.prototype.drawShadow = function() {
-  var shadow = this.group.polygon().ngon({
-    radius: this.params.r * this.params.shadowK,
-    edges: this.params.edges
-  });
-  shadow.fill(this.params.color).opacity(this.params.shadowOpacity);
-  shadow.center(0, 0);
-  return shadow;
-};
-
-MLCloud.prototype.drawHex = function() {
-  var hex = this.group.polygon().ngon({
-    radius: this.params.r,
-    edges: this.params.edges
-  });
-  hex.fill(this.params.color).center(0, 0);
-  return hex;
-};
-
-MLCloud.prototype.drawLogo = function() {
-  var logo = this.group.image(this.params.logoPath, this.params.logoW, this.params.logoW);
-  logo.center(0, 0);
-  return logo;
-};
-
-MLCloud.prototype.show = function(event) {
-  this.group.opacity(1).forward();
-};
-
-MLCloud.prototype.ding = function(event, reversed) {
-  var t = 300;
-  this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
-  setTimeout(function () {
-    event();
-  }, t * 2);
-};
-
-MLCloud.prototype.findSolution = function(customer, event) {
-  var t1 = 200, d1 = 350, t2 = 180, color = customer.color;
-  var _this = this;
-
-  function callback() {
-    customer.receiveResponse(function() {
-      customer.line.toCenter();
-      event()
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
     });
   }
 
-  // function callback() {
-    _this.shadow.animate(t1).fill(color);
-    _this.hex.fill(color);
-    _this.tmp.scale(1).center(0, 0);
-    _this.tmp.delay(t1 + d1).once(1, function () {
-     _this.ding(callback);
-    }).animate(t2).scale(0.01).center(0, 0);
-  // }
+  var HEX_SETTINGS = {
+    radius: 30,
+    fill: '#00d6ff',
+    edges: 8,
+    stroke: '#00d6ff',
+    'stroke-width': 0,
+  };
 
-  // customer.stopRequest(callback);
+  var SHADOW_SETTINGS = {
+    edges: HEX_SETTINGS.edges,
+    fill: HEX_SETTINGS.fill,
+    radius: HEX_SETTINGS.radius * 1.3,
+    opacity: 0.3,
+  };
 
-};
+  var LOGO_SETTINGS = {
+    width: 50,
+    height: 50,
+    url: 'dist/logo/l4.png',
+  };
 
-MLCloud.prototype.fallOutColor = function(event) {
-  var d1 = 420, t1 = 150, d2 = 200, t2 = 70;
+  function MLCloud (draw, cx, cy) {
+    this.cx = cx;
+    this.cy = cy;
+    // this.color = '#0060ff';
+    // this.ip = 'cogniOTA';
 
-  var _this = this, color = this.params.color;
-  this.tmp.delay(d1).fill(color).animate(t1).scale(1).center(0, 0);
-  this.shadow.delay(d1 + t1 + d2).animate(t2).fill(color).once(1, function () {
-    _this.tmp.fill(color).scale(0.01).center(0, 0);
-    _this.hex.fill(color);
-    event();
-  });
-};
+    this.group = draw.group();
+    this.group.move(this.cx, this.cy);
+    this.group.width(SHADOW_SETTINGS.radius * 2).height(SHADOW_SETTINGS.radius * 2);
 
-MLCloud.prototype.testProvider = function(color) {
-  this.shadow.animate(200, '>').fill(color).opacity(0.6);
-  this.shadow.delay(100).animate(200).opacity(this.params.shadowOpacity);
-  // this.hex.animate(200).fill(color).loop(2, true);
-};
+    this.shadow = this.drawShadow();
+    this.hex = this.drawHex();
+    this.logo = this.drawLogo();
 
-MLCloud.prototype.chooseProvider = function(color, event) {
-  this.shadow.animate(100).fill(color);
+    this.group.opacity(0);
+  }
 
-  this.ding(function(){});
-};
+  MLCloud.prototype.drawShadow = function() {
+    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS);
+    shadow.opacity(0);
 
-MLCloud.prototype.receiveResponse = function(event) {
-  var _this = this;
-  this.ding(function() {
-    _this.fallOutColor(event);
-  }, true);
-};
+    setTimeout(function () {
+      shadow.opacity(1).attr(SHADOW_SETTINGS).center(0, 0);
+    }, 10);
+    return shadow;
+  };
+
+  MLCloud.prototype.drawHex = function() {
+    var hex = this.group.polygon().ngon(HEX_SETTINGS);
+    hex.opacity(0);
+
+    var _this = this;
+    setTimeout(function () {
+      _this.width = hex.node.getBBox().width;
+      hex.opacity(1).attr(HEX_SETTINGS).center(0, 0);
+    }, 10);
+    return hex;
+  };
+
+  MLCloud.prototype.drawLogo = function() {
+    var logo = this.group.image(
+      LOGO_SETTINGS.url,
+      LOGO_SETTINGS.width,
+      LOGO_SETTINGS.height
+    );
+    logo.move(-LOGO_SETTINGS.width / 2, -LOGO_SETTINGS.height / 2);
+    return logo;
+  };
+
+  MLCloud.prototype.show = function() {
+    this.group.opacity(1);
+  };
+
+  MLCloud.prototype.hide = function() {
+    this.group.opacity(0);
+  };
+
+  MLCloud.prototype.fallInColor = function(color, animated) {
+    var t = 0, t1 = 200, d1 = 350, t2 = 180, d2 = 100, t3 = 400;
+    var k1 = 1, k2 = 1.08;
+    this.hex.attr({'stroke': color});
+
+    var hex, shadow;
+
+    if (animated) {
+      shadow = this.shadow.animate(t1);
+      this.hex.delay(t1);
+      t += t1;
+    } else {
+      shadow = this.shadow;
+    }
+    shadow.fill(color);
+
+    if (animated) {
+      hex = this.hex.delay(d1).animate(t2);
+      this.shadow.delay(d1).animate(t2).scale(0.8);
+      shadow = this.shadow.delay(d2).animate(t3, 'elastic');
+      t += d1 + t2 + d2 + t3 - 300;
+    } else {
+      hex = this.hex;
+      shadow = this.shadow;
+    }
+    hex.ngon({edges: HEX_SETTINGS.edges, radius: 0.1})
+       .attr({'stroke-width': this.width * k1})
+       .center(0, 0);
+    shadow.scale(k2);
+
+    return promise(t);
+  };
+
+  MLCloud.prototype.toDefault = function () {
+    this.hex.scale(1).ngon(HEX_SETTINGS).attr(HEX_SETTINGS).center(0, 0);
+    this.shadow.scale(1).ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(0, 0);
+  };
+
+  MLCloud.prototype.ding = function(reversed) {
+    var t = 300;
+    this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
+
+    return promise(t * 2);
+  };
+
+  MLCloud.prototype.colorShadow = function(color, animated) {
+    var t = 0, t1 = 200;
+
+    var obj = this.shadow;
+
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.fill(color);
+
+    return promise(t);
+  };
+
+  MLCloud.fill = HEX_SETTINGS.fill;
+  MLCloud.edges = HEX_SETTINGS.edges;
+  MLCloud.r = SHADOW_SETTINGS.radius;
+
+  window.MLCloud = MLCloud;
+
+})();

@@ -3,6 +3,7 @@ var sass = require('gulp-sass');
 var concat = require('gulp-concat');
 var sourcemaps = require('gulp-sourcemaps');
 var autoprefixer = require('gulp-autoprefixer');
+var fileinclude = require('gulp-file-include');
 
 var sassOptions = {
   errLogToConsole: true,
@@ -16,6 +17,7 @@ var autoprefixerOptions = {
 var distPath = 'dist/';
 var styleSrc = 'styles/**/*.scss';
 var jsSrc = 'js/**/*.js';
+var htmlSrc = 'templates/**/*.html';
 
 gulp.task('styles', function () {
   gulp.src(styleSrc)
@@ -34,8 +36,20 @@ gulp.task('js', function () {
       .pipe(gulp.dest(distPath));
 });
 
+gulp.task('fileinclude', function() {
+  gulp.src(['templates/index.html'])
+    .pipe(fileinclude({
+      prefix: '@@',
+      basepath: '@file'
+    }))
+    .pipe(gulp.dest('./'));
+});
+
 
 gulp.task('default', function () {
   gulp.watch(styleSrc, ['styles']);
   gulp.watch(jsSrc, ['js']);
+  gulp.watch(htmlSrc, ['fileinclude']);
+  gulp.watch(['index.html'], ['fileinclude']);
+  gulp.watch(htmlSrc, ['fileinclude']);
 });

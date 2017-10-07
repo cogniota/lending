@@ -1,50 +1,40 @@
-function Graph(draw, VERTEXES, gridParams) {
-  this.edgeGroup = draw.group();
-  this.vertexesGroup = draw.group();
-  this.gridParams = gridParams;
+(function () {
+  'use strict';
 
-  this.vertexes = VERTEXES.reduce(function (bucket, v) {
-    bucket[v.idx] = v;
-    return bucket;
-  }, {});
-  this.vertexesList = VERTEXES.slice();
+  function Graph(draw, vertexes, params) {
+    this.vertexes = vertexes.reduce(function (bucket, vertex) {
+      bucket[vertex.idx] = Object.assign({}, vertex);
+      return bucket;
+    }, {});
 
-  this.createVertexes();
-}
+    this.group = draw.group();
+    this.edgeGroup = this.group.group();
+    this.vertexesGroup = this.group.group();
 
-Graph.prototype.createVertexes = function() {
-  var _this = this;
-  this.vertexesList.forEach(function (vertex) {
-    _this.createVertex(vertex);
-  });
-};
+    for (var idx in this.vertexes) {
+      var vertex = this.vertexes[idx];
+      this.createVertex(vertex, params);
+    }
+  }
 
-Graph.prototype.createVertex = function(vertex) {
-  var _this = this;
+  Graph.prototype.createVertex = function(vertex, params) {
+    var _this = this;
 
-  var path = getCirclePath(this.gridParams.r);
-  var gridNode = this.vertexesGroup.path(path);
-  gridNode.attr({
-    'fill': this.gridParams.fill,
-    'stroke': this.gridParams.stroke,
-    'stroke-width': this.gridParams.sw,
-  })
-  .center(vertex.pos[0], vertex.pos[1]);
-  // this.vertexesGroup.text(vertex.idx + '').center(vertex.pos[0] + 5, vertex.pos[1] + 5);
+    // var path = Helpers.getCirclePath(params.r);
+    // var gridNode = this.vertexesGroup.path(path);
+    var gridNode = this.vertexesGroup.circle();
+    gridNode.attr({fill: params.stroke, r: params.r}).center(vertex.pos[0], vertex.pos[1]);
+    // this.vertexesGroup.text(vertex.idx + '').center(vertex.pos[0] + 5, vertex.pos[1] + 20);
+    // gridNode.style({cx: vertex.pos[0], cy: vertex.pos[1]})
 
-  vertex.neightbors.forEach(function (neightborId) {
-    var neightbor = _this.vertexes[neightborId];
-    neightbor.neightbors.push(vertex.idx);
-    _this.edgeGroup.line(new SVG.PointArray([vertex.pos, neightbor.pos]))
-                   .attr({'stroke': _this.gridParams.stroke, 'stroke-width': _this.gridParams.w});
-  });
-};
+    vertex.neightbors.forEach(function (neightborId) {
+      var neightbor = _this.vertexes[neightborId];
+      neightbor.neightbors.push(vertex.idx);
+      _this.edgeGroup.line(new SVG.PointArray([vertex.pos, neightbor.pos]))
+                     .attr(params);
+    });
+  };
 
-Graph.prototype.toColor = function(fill, stroke, t) {
-  this.vertexesGroup.children().forEach(function (point) {
-    point.animate(t, 'sineIn').attr({fill: fill, stroke: stroke});
-  });
-  this.edgeGroup.children().forEach(function (line) {
-    line.animate(t, 'sineIn').attr({fill: fill, stroke: stroke});
-  });
-};
+
+  window.Graph = Graph;
+})();

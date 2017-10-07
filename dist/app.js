@@ -1,1665 +1,1561 @@
-function AgentCircle(draw, vertex, color) {
-  this.color = color;
+(function () {
+  'use strict';
 
-  this.r = 21;
-  this.length = this.r * 2 * 3.14;
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
-  this.defParams = {
-    'stroke-dasharray': this.length + ' ' + this.length,
-    'stroke-dashoffset': 0,
-    'fill': this.color,
-    'fill-opacity': 0,
-    'stroke': this.color,
-    'stroke-width': 1,
-  };
-  this.activeParams = {
-    'scale': 1.1,
-    'fill-opacity': 0.3,
-    'stroke-width': 2,
-  };
+  function Agent(draw, params) {
+    this.cx = params.cx;
+    this.cy = params.cy;
+    this.color = params.color;
 
-  this.cx = vertex.pos[0];
-  this.cy = vertex.pos[1];
+    this.group = draw.group();
+    this.idx = this.group.id();
 
-  this.elem = this.draw(draw);
-}
+    params.cx = this.cx;
+    params.cy = this.cy;
 
-AgentCircle.prototype.draw = function(draw) {
-  var plot = getCirclePath(this.r);
-  var circle = draw.path(plot).attr(this.defParams).center(this.cx, this.cy);
-  circle.attr({
-    'stroke-dashoffset': this.length + 'px',
-  });
-  return circle;
-};
+    this.line = new AgentLine(this.group, params);
+    this.text = new AgentText(this.group, params);
+    this.circle = new AgentCircle(this.group, params);
+  }
 
-
-AgentCircle.prototype.show = function() {
-  this.elem.animate(1500, 'circOut').attr(this.defParams);
-};
-
-AgentCircle.prototype.activate = function(callback) {
-  this.elem.animate(200, 'backIn').scale(this.activeParams.scale).attr(this.activeParams);
-};
-
-AgentCircle.prototype.deactivate = function() {
-  this.elem.animate(100, '<').scale(1).attr(this.defParams);
-};
-
-AgentCircle.prototype.colorize = function(color) {
-  this.elem.animate(200).attr({'stroke': color, 'fill': color});
-};
-
-AgentCircle.prototype.spinAround = function(callback, toActive) {
-  var t1 = 250, d = 200;
-  var params = toActive ? this.activeParams : {};
-  this.elem.animate(t1, '>').attr({'stroke-dashoffset': this.length * -1 + 'px'})
-           .delay(d)
-           .animate(t1, '>').attr({'stroke-dashoffset': 0}).attr(params)
-           .once(1, function () {
-              callback && callback();
-           });
-};
-function AgentLine(draw, cx, cy, vertex, color, circle) {
-  this.color = color;
-  this.speed = 60;
-  this.defParams = {
-    'stroke-linecap': "round",
-    'stroke-dasharray': '5 5',
-    'stroke-width': 2,
-    'stroke-dashoffset': 0,
-    'opacity': 0.8,
-    'stroke': this.color,
-  };
-  this.activeParams = {
-    'stroke-width': 4,
-    'opacity': 1,
+  Agent.prototype.hide = function(animated) {
+    this.circle.circleOut(animated);
+    this.line.hide();
+    this.group.opacity(0);
   };
 
-  this.sx = vertex.pos[0];
-  this.sy = vertex.pos[1];
-  this.ex = cx;
-  this.ey = cy;
-
-  this.elem = this.draw(draw);
-}
-
-AgentLine.prototype.array = function() {
-  return [this.sx, this.sy, this.ex, this.ey];
-};
-
-AgentLine.prototype.draw = function(draw) {
-  var line = draw.line(this.sx, this.sy, this.sx, this.sy);
-  line.attr(this.defParams);
-  return line;
-};
-
-AgentLine.prototype.show = function(event) {
-  var d = 500, t = 300;
-  this.elem.delay(d)
-           .animate(t, 'cubicIn').plot(this.sx, this.sy, this.ex, this.ey);
-  var _this = this;
-  setTimeout(function () {
-    _this.toCenter();
-    event && event();
-  }, d + t);
-};
-
-AgentLine.prototype.opacity = function(opacity) {
-  this.elem.animate().opacity(opacity);
-};
-
-AgentLine.prototype.toCenter = function(attr, i) {
-  // this.lastDirection = 'toCenter';
-  var s = this.elem.attr('stroke-dasharray').split(' ');
-  var d = s.reduce(function(a, b) {return a + parseInt(b);}, 0);
-
-  this.elem.finish().attr({'stroke-dashoffset': 0});
-
-  if (attr) {
-    this.elem.animate(100).attr(attr);
-  }
-  // this.elem.animate(d * this.speed).attr({'stroke-dashoffset': d * (i || -1)}).loop();
-};
-
-AgentLine.prototype.fromCenter = function(attr) {
-  // this.lastDirection = 'fromCenter';
-  this.toCenter(attr, 1);
-};
-
-AgentLine.prototype.activate = function() {
-  this.toCenter(this.activeParams);
-};
-
-AgentLine.prototype.deactivate = function() {
-  this.toCenter(this.defParams);
-};
-
-AgentLine.prototype.colorize = function(color) {
-  this.toCenter({'stroke': color});
-};
-function AgentText(draw, positions, r, color) {
-  this.d = 10;
-  this.speed = 15;
-
-  this.r = r;
-  this.color = color;
-
-  this.params = {
-    'fill': this.color
-  };
-
-  this.elem = this.draw(draw, positions);
-}
-
-AgentText.prototype.draw = function(draw, positions) {
-  var x1 = positions[0],
-      y1 = positions[1],
-      x2 = positions[2],
-      y2 = positions[3];
-  var d = this.d * (x1 > x2 ? 1 : -1);
-  var L = SVGIntersections.lengthBetweenTwoPoints(x1, y1, x2, y2);
-  var cosA = (x2 - x1) / L,
-      sinA = (y2 - y1) / L;
-  var dx = d * sinA,
-      dy = d * cosA;
-
-  this.start = [x1 - dx, y1 + dy];
-  this.end = [x2 - dx, y2 + dy];
-
-  this.length = L;
-  this.time = this.length * this.speed;
-
-  // draw.line(new SVG.PointArray([this.start, this.end])).stroke('yellow');
-  var text = draw.plain('').attr(this.params).opacity(0).center(0, 0);
-
-  return text;
-};
-
-AgentText.prototype.colorize = function(color) {
-  this.elem.fill(color);
-};
-
-AgentText.prototype.move = function(params, event) {
-  var d = this.r / this.length;
-  var d1 = this.elem.node.getBBox().width / this.length;
-
-  var eventPos = 1 - d - d1;
-
-  var k = 10 / (d + d1);
-
-  var start = params.toCenter ? this.start : this.end;
-  var end = params.toCenter ? this.end : this.start;
-  this.toCenter = params.toCenter;
-
-  if (this.inLoop) {
-    this.elem.stop();
-  }
-
-  if (params.text) {
-    this.elem.plain(params.text);
-  }
-  if (params.color) {
-    this.elem.fill(params.color);
-  }
-  this.elem.center(start[0], start[1]).opacity(0);
-
-
-  // var n = params.isLoop ? undefined : 1;
-  // this.inLoop = params.isLoop;
-
-  function getOpacity(pos) {
-    if (params.toCenter && pos > d) return 1; //Math.log10(pos * k);
-    if (!params.toCenter && pos < (1 - d)) return 1; //Math.log10((1 - pos) * k);
-    return 0;
-  }
-  this.elem.animate(this.time).center(end[0], end[1])
-           // .loop(n)
-           .during(function(pos, morph, eased, situation) {
-    var o = getOpacity(pos)
-    this.opacity(o);
-    if (event && pos > eventPos) {
-      event();
-      event = undefined;
-    }
-  });
-};
-
-AgentText.prototype.toCenterTimeout = function(event, d) {
-  var shadowTime = d * this.speed,
-      oneBodyTime = this.elem.node.getBBox().width * this.speed;
-
-  var t = this.time - shadowTime - oneBodyTime;
-  var _this = this;
-  setTimeout(function () {
-    event(_this.time);
-  }, t);
-};
-
-AgentText.prototype.sendRequest = function(event, d) {
-  this.move({isLoop: true, toCenter: true, text: '?'}, event);
-
-  // this.toCenterTimeout(event, d, true);
-};
-
-// AgentText.prototype.stopRequest = function(callback, d) {
-//   var x = this.end[0] - d;
-//   var y = this.end[1] - d;
-
-//   var end = this.end, start = this.start;
-
-//   function isSent(animations) {
-//     var x = animations.cx[0].value;
-//     var y = animations.cy[0].value;
-
-//     if (end[0] > start[0] && x < (end[0] - d)) return false;
-//     if (end[1] > start[1] && y < (end[1] - d)) return false;
-//     if (end[0] < start[0] && x > (end[0] + d)) return false;
-//     if (end[1] < start[1] && y > (end[1] + d)) return false;
-
-//     return true;
-//   }
-
-//   while (!isSent(this.elem.fx.situation.animations)) {
-//     // white
-//   }
-
-//   this.elem.finish().hide();
-//   this.elem.inLoop = false;
-//   callback();
-// };
-
-AgentText.prototype.receiveRequest = function(event) {
-  this.move({text: '?'}, event);
-};
-
-AgentText.prototype.sendResponse = function(event, d) {
-  this.move({toCenter: true, text: '!'}, event);
-
-  // this.toCenterTimeout(event, d);
-};
-
-AgentText.prototype.receiveResponse = function(event) {
-  this.move({text: '!'}, event);
-};
- function Agent(draw, cx, cy, vertex, color, event, mlCloud) {
-  this.vertex = Object.assign({}, vertex);
-  this.mlCloud = mlCloud;
-
-  this.color = color;
-
-  this.group = draw.group();
-  this.circle = new AgentCircle(this.group, vertex, color);
-  this.circle.show();
-
-  this.line = new AgentLine(this.group, cx, cy, vertex, color);
-  this.line.show(event);
-
-  this.text = new AgentText(this.group, this.line.array(), this.circle.r, color);
-}
-
-Agent.prototype.activate = function() {
-  this.circle.activate();
-  this.line.activate();
-};
-
-Agent.prototype.deactivate = function() {
-  this.circle.deactivate();
-  this.line.deactivate();
-  this.text.colorize(this.color);
-};
-
-////////
-
-Agent.prototype.sendRequest = function(event, animateCircle) {
-  var _this = this;
-  var distance = this.mlCloud.shadow.width() * 0.5;
-  if (animateCircle) {
-    this.circle.spinAround(function () {
-      _this.line.activate();
-      _this.text.sendRequest(event, distance);
-    }, true);
-  } else {
-    this.text.sendRequest(event, distance);
-  }
-};
-
-
-Agent.prototype.stopRequest = function(callback) {
-  var distance = this.mlCloud.hex.width() * 0.5;
-  this.text.stopRequest(callback);
-};
-
-// Agent.prototype.startContract = function(color) {
-//   this.circle.colorize(color);
-//   this.line.colorize(color);
-//   this.text.colorize(color);
-// };
-
-Agent.prototype.receiveRequest = function(color, event) {
-  var _this = this;
-
-  setTimeout(function () {
-    _this.circle.colorize(color);
-    _this.line.colorize(color);
-    _this.text.colorize(color);
-
-    _this.text.receiveRequest(event);
-    _this.line.fromCenter();
-  }, 570);
-};
-
-Agent.prototype.sendResponse = function(event) {
-  var _this = this;
-
-  function callback () {
-    _this.line.toCenter();
-    _this.text.sendResponse(event, distance);
-  }
-
-  var distance = this.mlCloud.shadow.width() * 0.5;
-  this.circle.spinAround(callback);
-};
-
-Agent.prototype.receiveResponse = function(event) {
-  this.line.fromCenter();
-  var _this = this;
-  this.text.receiveResponse(function () {
-    _this.circle.spinAround(event);
-  });
-};
- function Car(draw, vertex, grid, color, elements) {
-  this.grid = grid;
-  this.w = 33;
-  this.color = color;
-  this.elements = elements;
-
-  this.currentVertexIdx = vertex.idx;
-  this.group = draw.group()
-                   .width(this.w).height(this.w)
-                   .center(vertex.pos[0] -this.w/2, vertex.pos[1]-this.w/2);
-
-  this.img = this.drawCar(draw);
-  this.go(vertex.neightbors[0]);
-}
-
-Car.prototype.drawCar = function(draw) {
-  var img = this.group.image('dist/cars/2.png', this.w, this.w);
-  img.center(this.w / 2, this.w / 2);
-  return img;
-};
-
-// Car.prototype.drawCircle = function(stroke, fill, op) {
-//   var circle = this.group.circle();
-//   var cx = this.w / 2
-//   var cy = this.w / 2
-//   // var cy = cx - 5;
-//   // var circle = this.group.polygon().ngon({
-//   //   radius: 30,
-//   //   edges: 3
-//   // });
-//   circle.attr({
-//     // 'r': 17,
-//     // 'fill': '#f8d27b',
-//     'fill': fill,
-//     'fill-opacity': op,
-//     'stroke': stroke,
-//     'stroke-width': 3
-//   }).center(cx, cy);
-//   return circle;
-// };
-
-Car.prototype.go = function(nextId) {
-  var vertex = this.grid.vertexes[nextId];
-  var _this = this;
-  if (vertex.pos[0] < this.group.cx() && !this.reversed) {
-    this.img.addClass('flipped');
-  } else if (this.img.hasClass('flipped')) {
-    this.img.removeClass('flipped')
-  }
-  this.group.animate(3000).center(vertex.pos[0], vertex.pos[1]).once(1, function (pos) {
-    _this.go(vertex.neightbors[0]);
-  });
-};
-function Graph(draw, VERTEXES, gridParams) {
-  this.edgeGroup = draw.group();
-  this.vertexesGroup = draw.group();
-  this.gridParams = gridParams;
-
-  this.vertexes = VERTEXES.reduce(function (bucket, v) {
-    bucket[v.idx] = v;
-    return bucket;
-  }, {});
-  this.vertexesList = VERTEXES.slice();
-
-  this.createVertexes();
-}
-
-Graph.prototype.createVertexes = function() {
-  var _this = this;
-  this.vertexesList.forEach(function (vertex) {
-    _this.createVertex(vertex);
-  });
-};
-
-Graph.prototype.createVertex = function(vertex) {
-  var _this = this;
-
-  var path = getCirclePath(this.gridParams.r);
-  var gridNode = this.vertexesGroup.path(path);
-  gridNode.attr({
-    'fill': this.gridParams.fill,
-    'stroke': this.gridParams.stroke,
-    'stroke-width': this.gridParams.sw,
-  })
-  .center(vertex.pos[0], vertex.pos[1]);
-  // this.vertexesGroup.text(vertex.idx + '').center(vertex.pos[0] + 5, vertex.pos[1] + 5);
-
-  vertex.neightbors.forEach(function (neightborId) {
-    var neightbor = _this.vertexes[neightborId];
-    neightbor.neightbors.push(vertex.idx);
-    _this.edgeGroup.line(new SVG.PointArray([vertex.pos, neightbor.pos]))
-                   .attr({'stroke': _this.gridParams.stroke, 'stroke-width': _this.gridParams.w});
-  });
-};
-
-Graph.prototype.toColor = function(fill, stroke, t) {
-  this.vertexesGroup.children().forEach(function (point) {
-    point.animate(t, 'sineIn').attr({fill: fill, stroke: stroke});
-  });
-  this.edgeGroup.children().forEach(function (line) {
-    line.animate(t, 'sineIn').attr({fill: fill, stroke: stroke});
-  });
-};
-function getCirclePath(r) {
-  var a = r / 4, b = a * 2, c = a * 3;
-  return 'M' + b + ' 0 ' +
-         'C' + c + ' 0 ' + r + ' ' + a + ' ' + r + ' ' + b + ' ' +
-         'C' + r + ' ' + c + ' ' + c + ' ' + r + ' ' + b + ' ' + r + ' ' +
-         'C' + a + ' ' + r + ' 0 ' + c + ' 0 ' + b + ' ' +
-         'C0 ' + a + ' ' + a + ' 0 ' + b + ' 0 Z';
-};
-
-function MLCloud(draw, cx, cy) {
-  this.group = draw.group();
-  this.group.backward();
-
-  this.params = Object.assign({}, mlNodeCloudParams);
-  this.cx = cx;
-  this.cy = cy;
-  // this.cx = this.params.cx;
-  // this.cy = this.params.cy;
-  // console.log(draw)
-
-  this.group.opacity(0).center(this.cx, this.cy);
-
-  this.shadow = this.drawShadow();
-  this.hex = this.drawHex();
-
-  this.tmp = this.drawHex().scale(0.01).center(0, 0);
-
-  this.logo = this.drawLogo();
-}
-
-MLCloud.prototype.drawShadow = function() {
-  var shadow = this.group.polygon().ngon({
-    radius: this.params.r * this.params.shadowK,
-    edges: this.params.edges
-  });
-  shadow.fill(this.params.color).opacity(this.params.shadowOpacity);
-  shadow.center(0, 0);
-  return shadow;
-};
-
-MLCloud.prototype.drawHex = function() {
-  var hex = this.group.polygon().ngon({
-    radius: this.params.r,
-    edges: this.params.edges
-  });
-  hex.fill(this.params.color).center(0, 0);
-  return hex;
-};
-
-MLCloud.prototype.drawLogo = function() {
-  var logo = this.group.image(this.params.logoPath, this.params.logoW, this.params.logoW);
-  logo.center(0, 0);
-  return logo;
-};
-
-MLCloud.prototype.show = function(event) {
-  this.group.opacity(1).forward();
-};
-
-MLCloud.prototype.ding = function(event, reversed) {
-  var t = 300;
-  this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
-  setTimeout(function () {
-    event();
-  }, t * 2);
-};
-
-MLCloud.prototype.findSolution = function(customer, event) {
-  var t1 = 200, d1 = 350, t2 = 180, color = customer.color;
-  var _this = this;
-
-  function callback() {
-    customer.receiveResponse(function() {
-      customer.line.toCenter();
-      event()
+  Agent.prototype.show = function(animated) {
+    this.group.opacity(1);
+
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.circle.circleIn(animated, {earlyStart: true, active: true}).then(function () {
+        _this.circle.deactivateBorder(true);
+        return _this.line.show(animated).then(resolve);
+      });
     });
-  }
-
-  // function callback() {
-    _this.shadow.animate(t1).fill(color);
-    _this.hex.fill(color);
-    _this.tmp.scale(1).center(0, 0);
-    _this.tmp.delay(t1 + d1).once(1, function () {
-     _this.ding(callback);
-    }).animate(t2).scale(0.01).center(0, 0);
-  // }
-
-  // customer.stopRequest(callback);
-
-};
-
-MLCloud.prototype.fallOutColor = function(event) {
-  var d1 = 420, t1 = 150, d2 = 200, t2 = 70;
-
-  var _this = this, color = this.params.color;
-  this.tmp.delay(d1).fill(color).animate(t1).scale(1).center(0, 0);
-  this.shadow.delay(d1 + t1 + d2).animate(t2).fill(color).once(1, function () {
-    _this.tmp.fill(color).scale(0.01).center(0, 0);
-    _this.hex.fill(color);
-    event();
-  });
-};
-
-MLCloud.prototype.testProvider = function(color) {
-  this.shadow.animate(200, '>').fill(color).opacity(0.6);
-  this.shadow.delay(100).animate(200).opacity(this.params.shadowOpacity);
-  // this.hex.animate(200).fill(color).loop(2, true);
-};
-
-MLCloud.prototype.chooseProvider = function(color, event) {
-  this.shadow.animate(100).fill(color);
-
-  this.ding(function(){});
-};
-
-MLCloud.prototype.receiveResponse = function(event) {
-  var _this = this;
-  this.ding(function() {
-    _this.fallOutColor(event);
-  }, true);
-};
-
-function MLNode(draw, vertex, fill, event) {
-  this.startColor = fill;
-  this.hexParams = {
-    'radius': 15,
-    'edges': 6,
-    'edgesStart': 3,
-    // 'fill': '#00fff5',
-    'fill': '#00d6ff',
-  };
-  this.shadowParams = {
-    'radius': this.hexParams.radius * 1.3,
-    'edges': this.hexParams.edges,
-    'fill': this.hexParams.fill,
-    'opacity': 0.3,
-  };
-  this.lineParams = {
-    'stroke': this.hexParams.fill,
-    'stroke-width': 1.5,
-    'opacity': 0.7
   };
 
-
-  this.vertex = Object.assign({}, vertex);
-  var neightborsIdxs = this.vertex.neightbors;
-  this.neightborsVertexes = VERTEXES_TANGLE.reduce(function (bucket, v) {
-    if (neightborsIdxs.indexOf(v.idx) > -1) {
-      bucket.push(Object.assign({}, v));
-    }
-    return bucket;
-  }, []);
-
-  this.group = draw.group();
-
-  this.cx = this.vertex.pos[0];
-  this.cy = this.vertex.pos[1];
-
-  this.shadow = this.drawShadow();
-  this.hex = this.drawHex();
-
-  this.show(event);
-}
-
-MLNode.prototype.drawShadow = function() {
-  var params = {edges: this.shadowParams.edges, radius: 0.1};
-  var shadow = this.group.polygon().ngon(params);
-  shadow.attr(this.shadowParams).center(this.cx, this.cy);
-  return shadow;
-};
-
-MLNode.prototype.drawHex = function() {
-  var params = {edges: this.hexParams.edgesStart, radius: 0.1};
-  var hex = this.group.polygon().ngon(params);
-  hex.attr(this.hexParams).fill(this.startColor).center(this.cx, this.cy);
-  return hex;
-};
-
-MLNode.prototype.show = function(event) {
-  var hexT = 100,
-      hexTotalT = ((this.hexParams.edges + 1) - this.hexParams.edgesStart) * hexT;
-  var shadowDelayAfter = 100,
-      shadowT = 300,
-      shadowDelayBefore = hexTotalT + shadowDelayAfter - shadowT;
-
-  this.shadow.delay(shadowDelayBefore);
-
-  var ngonParams = {edges: this.hexParams.edges, radius: this.hexParams.radius};
-  for (var i = this.hexParams.edgesStart; i <= this.hexParams.edges; i++) {
-    ngonParams.edges = i;
-    this.hex.animate(hexT).ngon(ngonParams).center(this.cx, this.cy)
-                          .fill(i > 4 ? this.hexParams.fill : this.startColor);
-  }
-
-  this.shadow.animate(shadowT, 'backOut').attr(this.shadowParams)
-                                         .ngon(this.shadowParams)
-                                         .center(this.cx, this.cy)
-             .once(1, function () {event && event(); });
-};
-
-MLNode.prototype.connectToOther = function(nodes, event) {
-  this.lineGroup = this.group.group();
-
-  var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
-
-  var _this = this;
-  var raised = false;
-  function createLine(s, e) {
-    var l = _this.lineGroup.line(new SVG.PointArray([s, s]));
-    l.attr(_this.lineParams).opacity(0.3);
-
-    var middle = [
-      s[0] - ((s[0] - e[0]) / 2),
-      s[1] - ((s[1] - e[1]) / 2)
-    ];
-    l.animate(t1, 'sineOut').plot(new SVG.PointArray([s, middle]));
-
-    l.delay(d1).animate(t2, 'sineOut').attr({'opacity': 1});
-    l.animate(t3, 'sineIn').attr(_this.lineParams)
-     .once(1, function () {
-      // animations are simultaneous so there is no need to check which is the last
-      if (event && raised === false) {
-        raised = true;
-        event();
+  Agent.prototype.activate = function(animated, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      var circlePromise;
+      if (circleIn) {
+        circlePromise = _this._circleOutPromise({active: true});
+      } else {
+        circlePromise = NOOPPromise.then(function () {
+          _this.circle.activateBorder();
+        });
       }
-     });
-  }
-
-  nodes.forEach(function (node, i) {
-    if (node.vertex.idx != _this.vertex.idx) {
-      createLine(_this.vertex.pos, node.vertex.pos);
-      createLine(node.vertex.pos, _this.vertex.pos);
-    }
-  });
-};
-
-MLNode.prototype.moveToCenter = function(cx, cy, showCloud, event) {
-  this.lineGroup.animate(100).opacity(0);
-
-  var cloudParams = Object.assign({}, mlNodeCloudParams);
-  var dx = cx - this.cx;
-  var dy = cy - this.cy;
-  var t1 = 250, t2 = 500;
-
-  var _this = this;
-  function move(elem, params) {
-    elem.animate(t1, '<>').ngon(ngonParams).center(_this.cx, _this.cy).once(1, function () {
-      if (showCloud) {
-        showCloud();
-        showCloud = undefined;
-      }
+      return circlePromise.then(function () {
+        _this.circle.activateBorder(animated);
+        _this.circle.showFill(animated);
+        return _this.line.activate(animated).then(resolve);
+      });
     });
-    elem.animate(t2, '>').scale(1.5).opacity(0).center(_this.cx, _this.cy).once(1, function () {
-      if (event) {
-        event();
-        event = undefined;
+  };
+
+  Agent.prototype._send = function(t, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.activate(true, circleIn).then(function () {
+        return _this.text.send('?').then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.sendRequest = function() {
+    return this._send('?', true);
+  };
+
+  Agent.prototype.sendResponse = function() {
+    return this._send('!', false);
+  };
+
+  Agent.prototype._circleOutPromise = function(params) {
+    params = params || {};
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.circle.hideFill(true);
+      return _this.circle.circleOut(true).then(function () {
+        if (params.deactivate) {
+          _this.circle.deactivateBorder(true);
+        } else {
+          _this.circle.showFill(true);
+        }
+        return _this.circle.circleIn(true, {active: params.active}).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.deactivate = function(animated, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.line.deactivate(animated);
+      _this.circle.deactivateBorder(animated);
+      _this.circle.hideFill(animated);
+
+      var circlePromise;
+      if (circleIn) {
+        circlePromise = _this._circleOutPromise({deactivate: true});
+      } else {
+        circlePromise = NOOPPromise.then(function () {
+          _this.circle.hideFill(animated);
+          _this.circle.deactivateBorder();
+        });
       }
-    });;
-  }
+      return circlePromise.then(resolve);
+    });
+  };
 
-  var ngonParams = {radius: cloudParams.r, edges: cloudParams.edges};
-  move(this.hex, ngonParams);
+  Agent.prototype._receive = function(t) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.text.receive(t).then(function () {
+        return _this._circleOutPromise().then(resolve);
+      });
+    });
+  };
 
-  ngonParams.radius = cloudParams.r * cloudParams.shadowK;
-  move(this.shadow, ngonParams);
+  Agent.prototype.receiveResponse = function() {
+    return this._receive('!');
+  };
 
-  this.group.animate(t1, 'backIn').dmove(dx, dy);
-};
-var Random = {
-  range: function range(min, max) {
-    return Math.round(Math.random() * (max - min) + min);
-  },
-  choice: function choice(arr) {
-    var max = arr.length;
-    if (max === void 0) {
-      arr = Object.keys(arr);
-      max = arr.length;
-    }
-    var n = this.range(0, max - 1);
-    return arr[n];
-  },
-  shuffle: function shuffle(_a) {
-    var a = _a.slice();
-    var j, x, i;
-    for (i = a.length; i; i--) {
-        j = Math.floor(Math.random() * i);
-        x = a[i - 1];
-        a[i - 1] = a[j];
-        a[j] = x;
-    }
-    return a;
-  },
-  deviate: function deviate(i, d) {
-    var a = this.range(d * -1, d);
-    return i + a;
-  }
-};
+  Agent.prototype.receiveRequest = function(first_argument) {
+    return this._receive('?');
+  };
 
-function initBtns() {
-  var openProtocolBtn = document.querySelector('#openProtocol');
-  var bbox = openProtocolBtn.getBoundingClientRect();
+  Agent.prototype.colorize = function(color, reversed, animated) {
+    this.text.colorize(color);
+    var _this = this;
 
-  var secondPage = document.querySelector('#secondPage');
-  secondPage.style.left = 0;
-  secondPage.style.top = 0;
-  secondPage.style.width = '100%';
-  secondPage.style.height = '100%';
-
-  var slideShow = new MapSlideShow();
-
-  // var map = new SalesManMap(slideShow);
-  slideShow.slides.forEach(function (slide, i) {
-    var svgId = 'secondPageSVG' + i;
-    var svgParent = slide.querySelector('.svg');
-    svgParent.setAttribute('id', svgId);
-
-    var draw = SVG(svgId);
-    new SalesManMap(draw);
-  });
-
-  secondPage.style.left = bbox.x + 'px';
-  secondPage.style.top = bbox.y + 'px';
-  secondPage.style.width = bbox.width + 'px';
-  secondPage.style.height = bbox.height + 'px';
-
-  var isOpen = false;
-  function toggle(event) {
-    if (isOpen && event.srcElement.getAttribute('id') == 'backToMain') {
-      document.body.className = '';
-      isOpen = false;
+    if (animated) {
+      return new Promise(function (resolve) {
+        var first = _this.line, second = _this.circle;
+        if (reversed) {
+          first = _this.circle, second = _this.line;
+        }
+        return first.colorize(color).then(function () {
+          return second.colorize(color).then(resolve);
+        });
+      });
     } else {
-      document.body.className = 'secondPage';
-      isOpen = true;
-
-      setTimeout(function () {
-      }, 500)
+      this.line.colorize(color, false);
+      this.circle.colorize(color, false);
+      return NOOPPromise;
     }
+
   };
 
-  secondPage.addEventListener('click', toggle);
-}
+  window.Agent = Agent;
 
-function createSalesMan() {
-  initBtns();
-}
+})();
+(function () {
+  'use strict';
 
-function SalesManMap(draw) {
-  this.draw = draw;
-  this.elements = {};
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
-  this.createSVG();
+  var SPIN_TIME = 250;
 
-  this.mlCloud = new MLCloud(this.draw, 250, 192.5);
-
-  this.drawWHouses();
-  this.drawShops();
-
-  this.drawML();
-
-  this.drawCars();
-}
-
-SalesManMap.prototype.createSVG = function() {
-  this.grid = new Graph(this.draw, VERTEXES_SALESMAN, gridParams_SALESMAN);
-  this._drawBG();
-};
-
-
-SalesManMap.prototype._drawBG = function() {
-  var parksPaths = [
-    'M26 68 l45 3 l 32 26 l -67 15 Z',
-    'M42 207 l57 -13 l 37 25 l 12 26 l -70 10  l -35 -10 Z',
-    'M356 75 l50 -16 l 32 11 l -17 25 l -80 5 Z',
-    'M357 142 l10 -11 l 88 61 l 10 54 l -10 10 l -80 -54 Z',
-  ];
-
-
-  var greenGroup = this.draw.group();
-  parksPaths.forEach(function (d) {
-    greenGroup.path(d).fill('#4caf50').opacity(0.6);
-  });
-
-
-  var enviromentElems = [
-    {pos: [155, 70], src: '768320_garden_512x512.png', o: 1, w: 25},
-    {pos: [275, 305], src: '804184_garden_512x512.png', o: 1, w: 25},
-
-    {pos: [400, 257], src: '804198_protection_512x512.png', o: 1, w: 24},
-    {pos: [160, 295], src: '771160_firefighter_512x512.png', o: 1, w: 28},
-
-    {pos: [290, 55], src: '773385_tree_512x512.png', o: 1, w: 30},
-    {pos: [360, 245], src: '773368_tree_512x512.png', o: 1, w: 30},
-    {pos: [60, 160], src: '773373_tree_512x512.png', o: 1, w: 30},
-    {pos: [110, 330], src: '773371_tree_512x512.png', o: 1, w: 30},
-    {pos: [325, 165], src: '773393_tree_512x512.png', o: 1, w: 25},
-  ];
-
-  enviromentElems.forEach(function (params) {
-    greenGroup.image('dist/enviroment/' + params.src, params.w)
-              .center(params.pos[0], params.pos[1])
-              .opacity(params.o);
-  });
-};
-
-SalesManMap.prototype.drawWHouses = function() {
-  this.whouses = [];
-  var whousesGroup = this.draw.group();
-  this.mlCloud.group.before(whousesGroup);
-
-  var _this = this;
-  whouses_SALESMAN.forEach(function (idx, i) {
-    var vertex = _this.grid.vertexes[idx];
-    var color = whouses_colors_SALESMAN[i];
-    var whouse = new WHouse(whousesGroup, vertex, _this.mlCloud.cx, _this.mlCloud.cy, color);
-    _this.whouses.push(whouse);
-    _this.elements[idx] = whouse;
-  });
-};
-
-SalesManMap.prototype.drawShops = function() {
-  this.shops = [];
-  var shopsGroup = this.draw.group();
-  this.mlCloud.group.before(shopsGroup);
-
-  var _this = this;
-  shops_SALESMAN.forEach(function (idx, i) {
-    var vertex = _this.grid.vertexes[idx];
-    var color = shops_colors_SALESMAN[i];
-    var shop = new Shop(shopsGroup, vertex, _this.mlCloud.cx, _this.mlCloud.cy, color);
-    _this.shops.push(shop);
-    _this.elements[idx] = shop;
-  });
-};
-
-SalesManMap.prototype.drawCars = function() {
-  this.cars = [];
-  var carsGroup = this.draw.group();
-
-  // var cars_SALESMAN = Random.shuffle(VERTEXES_SALESMAN).slice(0, 3);
-  // var cars_SALESMAN = [VERTEXES_SALESMAN[1]];
-  var _this = this;
-  cars_SALESMAN.forEach(function (idx, i) {
-    var vertex = _this.grid.vertexes[idx];
-    var color = cars_color_SALESMAN[i];
-    var car = new Car(carsGroup, vertex, _this.grid, color, _this.elements);
-    _this.cars.push(car);
-  });
-};
-
-
-SalesManMap.prototype.drawML = function() {
-  this.mlCloud.show();
-};
-
-// function SalesMan(svgId, bounds) {
-//   this.svgId = svgId;
-//   // this.bounds = bounds;
-
-//   this.createSVG();
-//   this.drawML();
-//   this.drawWHouses();
-//   this.linkWHouses();
-//   this.drawShops();
-//   this.linkShops();
-
-//   this.drawCars();
-// }
-
-// SalesMan.prototype.drawML = function() {
-
-// };
-
-
-// SalesMan.prototype.linkWHouses = function() {
-//   var _this = this;
-//   this.whouses.forEach(function (whouse) {
-//     whouse.showLink();
-//   });
-// };
-
-
-// SalesMan.prototype.linkShops = function() {
-//   var _this = this;
-//   this.shops.forEach(function (shop) {
-//     shop.showLink();
-//   });
-// };
-var VERTEXES_SALESMAN = [
-  {idx: 1, neightbors: [2, 6], pos: [45, 45]},
-  {idx: 2, neightbors: [3, 7], pos: [137, 25]},
-  {idx: 3, neightbors: [4, 7], pos: [255, 25]},
-  {idx: 4, neightbors: [7, 9], pos: [450, 35]},
-
-  {idx: 5, neightbors: [6, 10, 11], pos: [45, 120]},
-  {idx: 6, neightbors: [7, 11], pos: [150, 108]},
-  {idx: 7, neightbors: [], pos: [265, 100]},
-  {idx: 8, neightbors: [9, 11, 12, 13], pos: [350, 108]},
-  {idx: 9, neightbors: [13], pos: [475, 108]},
-
-  {idx: 10, neightbors: [11, 14], pos: [25, 192]},
-  {idx: 11, neightbors: [15], pos: [127, 182]},
-  {idx: 12, neightbors: [16, 18], pos: [350, 200]},
-  {idx: 13, neightbors: [18], pos: [465, 192]},
-
-  {idx: 14, neightbors: [15], pos: [25, 275]},
-  {idx: 15, neightbors: [16, 19], pos: [160, 250]},
-  {idx: 16, neightbors: [17, 20, 21], pos: [255, 275]},
-  {idx: 17, neightbors: [18, 21, 22], pos: [361, 285]},
-  {idx: 18, neightbors: [], pos: [475, 275]},
-
-  {idx: 19, neightbors: [20], pos: [25, 358]},
-  {idx: 20, neightbors: [], pos: [157, 358]},
-  {idx: 21, neightbors: [22], pos: [240, 358]},
-  {idx: 22, neightbors: [], pos: [455, 338]},
-];
-
-
-var whouses_SALESMAN = [4, 14, 21];
-var whouses_colors_SALESMAN = [
-  '#388e3c',  // green
-  '#8bc34a', // lightgreen
-  '#9e9d24', // lime
-];
-
-var shops_SALESMAN = [1, 11, 12, 20, 22];
-var shops_colors_SALESMAN = [
-  '#3f51b5',  // indigo
-  '#03a9f4', // light-blue
-  '#00838f',  // cyan
-  '#9575cd',  // deep-purple
-  '#e040fb', // purple
-];
-
-var cars_SALESMAN = [2, 9, 19];
-var cars_color_SALESMAN = [
-  '#ef5350',
-  '#ff5722',
-  '#ff9800',
-];
-
-var gridParams_SALESMAN = {
-  r: 5,
-  sw: 1,
-  w: 6,
-  fill: '#78909c',
-  stroke: '#78909c',
-};
-function Shop(draw, vertex, cx, cy, color) {
-  this.cx = vertex.pos[0];
-  this.cy = vertex.pos[1];
-  this.idx = vertex.idx;
-
-  this.color = color;
-
-  this.group = draw.group();
-  this.link = new AgentLine(this.group, cx, cy, vertex, this.color);
-  // this.drawCircle(gridParams_SALESMAN.fill, '#f5da98', 1);
-  // this.drawCircle(this.color, '#f5da98', 1);
-  // this.drawCircle(this.color, this.color, 0.6);
-  // this.img = this.group.image(
-  //   'https://www.shareicon.net/download/2016/01/23/707839_shopping.svg',
-  //   24, 24).center(this.cx, this.cy);
-  this.img = this.drawImg();
-  // this.drawCircle(this.color, 0.15);
-  // this.group.plain('S').font({
-  //   'fill': this.color,
-  //   'family': 'Rajdhani',
-  //   'weight': 'bold',
-  //   'size': '14px'
-  // }).center(this.cx, this.cy);
-};
-
-Shop.prototype.drawImg = function() {
-  this.w = 35;
-  var img = this.group.image('dist/cars/shopping.png', this.w, this.w);
-  img.center(this.cx, this.cy);
-  return img;
-};
-
-Shop.prototype.drawCircle = function(stroke, fill, op) {
-  var circle = this.group.circle().attr({
-    'r': 20,
-    // 'fill': '#f8d27b',
-    'fill': fill,
-    'fill-opacity': op,
-    'stroke': stroke,
-    'stroke-width': 3
-  }).center(this.cx, this.cy);
-  return circle;
-};
-
-Shop.prototype.showLink = function() {
-  var _this = this;
-  this.link.show(function () {
-    _this.link.opacity(0.25);
-  });
-};
-
-function MapSlideShow() {
-  this.slideOptions = {
-    paths : {
-      rect : 'M33,0h41c0,0,0,9.871,0,29.871C74,49.871,74,60,74,60H32.666h-0.125H6c0,0,0-10,0-30S6,0,6,0H33',
-      right : 'M33,0h41c0,0,5,9.871,5,29.871C79,49.871,74,60,74,60H32.666h-0.125H6c0,0,5-10,5-30S6,0,6,0H33', 
-      left : 'M33,0h41c0,0-5,9.871-5,29.871C69,49.871,74,60,74,60H32.666h-0.125H6c0,0-5-10-5-30S6,0,6,0H33'
-    },
-    speed : 500
-  };
-  this.h = 60;
-  this.w = 68;
-
-  this.slides = [];
-  this.elem = document.querySelector('#secondPage .main');
-
-  this._initSlides();
-  this._initNavs();
-}
-
-MapSlideShow.prototype._initSlides = function() {
-  this.slidesParent = this.elem.querySelector('ul.slideshow');
-
-  var elems = this.slidesParent.children;
-  this.screenW = this.slidesParent.offsetWidth;
-  this.count = elems.length;
-
-  this.slidesParent.style.width = this.slidesParent.offsetWidth * this.count + 'px';
-
-  for (var i = 0; i < elems.length; i++) {
-    var slide = this.createSlide(elems[i], i);
-    this.slides.push(slide);
-  }
-
-  this.currentN = 0;
-};
-
-MapSlideShow.prototype.createSlide = function(slide, i) {
-  var _this = this;
-  var color = 'rgba(237, 236, 218, 1)';
-  var svgId = 'secondPageSVGBG' + i;
-
-  slide.style.width = this.screenW + 'px';
-
-  var svgParent = slide.querySelector('.bg');
-  svgParent.setAttribute('id', svgId);
-
-  var H = svgParent.offsetHeight, W = this.screenW;
-  var cx = W/2, cy = H/2;
-  var sx = W/this.w * 0.8, sy = H/this.h;
-
-
-  var draw = SVG(svgId);
-  var path = draw.path(this.slideOptions.paths.rect)
-                 .fill(color)
-                 .center(cx, cy)
-                 .scale(sx, sy);
-
-  slide.animate = function (d, speed, easing, callback) {
-    path.stop()
-        .animate(speed, easing)
-            .plot(_this.slideOptions.paths[d])
-            .center(cx, cy).once(1, function () {
-              callback && callback();
-            });
-  };
-  slide.plot = function (d) {
-    path.plot(_this.slideOptions.paths[d]).center(cx, cy);
-  };
-
-  slide.querySelector('.svg').style.width = sx * this. w + 'px';
-  return slide;
-};
-
-MapSlideShow.prototype._initNavs = function() {
-  var _this = this;
-  var nav = this.elem.querySelector('ul.nav');
-  this.prev = nav.querySelector('.prev');
-  this.prev.onclick = function () {
-    _this.goPrev();
-  };
-  this.next = nav.querySelector('.next');
-  this.next.onclick = function () {
-    _this.goNext();
-  };
-
-  this.play = nav.querySelector('.play');
-  // keyboard navigation events
-      // document.addEventListener( 'keydown', function( ev ) {
-      //   var keyCode = ev.keyCode || ev.which;
-      //   switch (keyCode) {
-      //     // left key
-      //     case 37:
-      //       self._navigate('prev');
-      //       break;
-      //     // right key
-      //     case 39:
-      //       self._navigate('next');
-      //       break;
-      //   }
-      // } );
-};
-
-MapSlideShow.prototype._translate = function(nextN) {
-  this.currentN = nextN;
-  var translateVal = -1 * this.currentN * 100 / this.count;
-  this.slidesParent.style.WebkitTransform = 'translate3d(' + translateVal + '%,0,0)';
-  this.slidesParent.style.transform = 'translate3d(' + translateVal + '%,0,0)';
-};
-
-MapSlideShow.prototype.goNext = function() {
-  // morph svg path on exiting slide to "curved"
-  var nextN = this.currentN + 1;
-  if (nextN > (this.count - 1)) {
-    nextN = 0;
-  }
-  this._morph(nextN);
-};
-
-MapSlideShow.prototype.goPrev = function() {
-  var nextN = this.currentN - 1;
-  if (nextN < 0) {
-    nextN = this.count - 1;
-  }
-  this._morph(nextN);
-};
-
-MapSlideShow.prototype._morph = function(nextN) {
-  if (this.isAnimating) return;
-
-  this.isAnimating = true;
-  var _this = this;
-
-  var dir = nextN > this.currentN ? 'right' : 'left';
-  var speed = this.slideOptions.speed,
-      outSpeed = speed * 0.5,
-      inSpeed = speed * 0.3;
-
-  // change svg path on entering slide to "curved"
-  var nextItem = this.slides[ nextN ];
-
-  // morph svg path on exiting slide to "curved"
-  this.slides[ this.currentN ].animate(
-    dir, outSpeed, '>',
-    function () {
-      // morph svg path on entering slide to "rectangle"
-      nextItem.plot(dir === 'right' ? 'left' : 'right');
-      setTimeout(function () {
-        nextItem.animate('rect', speed, 'elastic');
-        _this.isAnimating = false;
-      }, outSpeed);
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
     });
-
-  this._translate(nextN);
-};
-
-
-
-function createTangle() {
-  var parent = document.querySelector('#firstPage .svg');
-  // var bounds = parent.getBoundingClientRect();
-  var svgId = parent.getAttribute('id');
-  var tangle = new Tangle(svgId);
-}
-
-function Tangle(svgId, bounds) {
-  this.svgId = svgId;
-  // this.bounds = bounds;
-
-  this.description = document.querySelector('#firstPage .main [description]');
-
-  this.run();
-}
-
-Tangle.prototype.showDescription = function(params, event) {
-  var _this = this;
-
-  function show(text){
-    if (text) {
-      _this.draw.addClass('overflowed');
-      _this.description.innerHTML = '<div>' + text + '</div>';
-      _this.description.className = 'active';
-    } else {
-      _this.draw.removeClass('overflowed');
-      _this.description.innerHTML = '';
-      _this.description.className = '';
-    }
   }
 
-  show(params.description);
+  function AgentCircle(draw, params) {
+    this.cx = params.cx;
+    this.cy = params.cy;
+    this.color = params.color;
 
-  setTimeout(function () {
-    show();
+    this.SETTINGS = Object.assign({}, params.circle);
+    this.length = this.SETTINGS.r * 2 * Math.PI;
 
-    setTimeout(function () {
-      _this[params.name](event);
-    }, params.beforeActionT || 1450);
-
-  }, params.textT || 3300);
-};
-
-Tangle.prototype.run = function() {
-  var chain = [
-    {name: 'createSVG', beforeStageT: 600},
-
-    {name: 'drawTangle', beforeStageT: 100,
-     description:
-      'It is <strong>IOTA tangle</strong>.',
-     textT: 1900, beforeActionT: 530},
-
-    {name: 'drawmlHosts', beforeStageT: 1000,
-     description:
-      'Any IOTA node can be turned into a <strong>machine learning node</strong>.',
-     beforeActionT: 550},
-
-    {name: 'mlHostsToCluster', beforeStageT: 800,
-     description:
-      'Machine Learning nodes create <strong>CognIOTA cluster.</strong>',
-     },
-    {name: 'mlClusterToCenter', beforeStageT: 100},
-
-    {name: 'drawAgents', beforeStageT: 700,
-     description:
-      'IOTA nodes <strong>request</strong> machine learning <strong>services</strong> from CognIOTA.',
-     },
-    {name: 'customerSendRequest', beforeStageT: 150},
-
-    {name: 'findSolution', beforeStageT: 680,
-     description: 'CognIOTA <strong>finds the solution</strong> for the request.',
-    },
-
-    {name: 'testProviders', beforeStageT: 550,
-     description: 'It uses <strong>auctions</strong> for finding the best task executer.',
-     },
-
-    {name: 'providerSendResponse', beforeStageT: 700,
-     description: 'CognIOTA powers <br><strong>the economy of IoT</strong>.'},
-
-    {name: 'clear', beforeStageT: 600,}
-  ];
-
-  chain.forEach(function (method, i) {
-    var nextMethod = chain[i + 1];
-    if (!nextMethod) nextMethod = chain[0];
-    method.next = nextMethod && [nextMethod.name];
-  });
-
-  var methods = chain.reduce(function (bucket, method) {
-    // if (bucket[method.name]) {
-    //   bucket[method.name].next = bucket[method.name].next.concat(method.next);
-    // } else {
-    // }
-    bucket[method.name] = method;
-    return bucket;
-  }, {});
-
-  var _this = this;
-
-  document.addEventListener('stageIsOver', function (e) {
-    var method = methods[e.detail];
-    if(!method) {
-      return;
-    }
-
-    var t = method.beforeStageT || 0;
-    setTimeout(function () {
-      callMethod(method);
-    }, t);
-
-  }, false);
-
-  function createEvent(params) {
-    return function () {
-      var nextMethod = params.next;
-      // var nextMethod = params.next && params.next[0];
-      // params.next = params.next && params.next.slice(1, params.next.length);
-      var event = new CustomEvent('stageIsOver', {detail: nextMethod});
-      document.dispatchEvent(event);
+    this.BORDER_ACTIVE_SETTINGS = {
+      'stroke-width': this.SETTINGS.border * 2
     };
+    this.BORDER_SETTINGS = {
+      'stroke-width': this.SETTINGS.border
+    };
+
+    this.group = draw.group().move(this.cx, this.cy);
+
+    this.bg = this.draw(this.SETTINGS.bg);
+
+    this.fill = this.draw({
+      stroke: this.color,
+      'stroke-width': this.SETTINGS.r * 2,
+      opacity: this.SETTINGS['fill-opacity'],
+      r: 0.1,
+    });
+
+    this.border = this.draw({
+      'stroke-width': this.SETTINGS.border,
+      'stroke-dashoffset': 0,
+      'stroke-dasharray': this.length + ' ' + this.length,
+      r: this.SETTINGS.r,
+      fill: 'transparent',
+      stroke: this.color
+    });
+    this.border.rotate(-90);
   }
 
-  function callMethod(params) {
-    var event = createEvent(params);
-    if (params.description != void 0) {
-      return _this.showDescription(params, event);
+  AgentCircle.prototype.draw = function(params) {
+    return this.group.circle().attr(params).center(0, 0);
+  };
+
+  AgentCircle.prototype._cicle = function(animated, value, params) {
+    var t = 0, t1 = SPIN_TIME, d = 100;
+    params = params || {};
+
+    var _this = this;
+    var activeAttr = {'stroke-width': this.SETTINGS.border * 2};
+    return new Promise(function (resolve) {
+      if (!animated) {
+        _this.border.attr({'stroke-dashoffset': value});
+        if (params.toActive) {
+          _this.border.attr(activeAttr);
+        }
+        return resolve();
+      } else {
+
+        t += t1;
+        var animation = _this.border.delay(d).animate(t1, 'circInOut');
+        animation.attr({'stroke-dashoffset': value});
+
+        if (params.active) {
+          animation.attr(_this.BORDER_ACTIVE_SETTINGS);
+        }
+
+        return setTimeout(resolve, t + d);
+      }
+    });
+  };
+
+  AgentCircle.prototype.circleOut = function(animated) {
+    return this._cicle(animated, this.length);
+  };
+
+  AgentCircle.prototype.circleIn = function(animated, params) {
+    return this._cicle(animated, 0, params);
+  };
+
+  AgentCircle.prototype._activateBorder = function(animated, settings) {
+    var t = 0, d = SPIN_TIME, t1 = 200;
+
+    var obj = this.border;
+    if (animated) {
+      t += d + t1;
+      obj = obj.delay(d).animate(t1, 'quadOut');
     }
-    _this[params.name](event);
+    obj.attr(settings);
+
+    return promise(t);
+  };
+
+  AgentCircle.prototype.deactivateBorder = function(animated) {
+    return this._activateBorder(animated, this.BORDER_SETTINGS);
+  };
+
+  AgentCircle.prototype.activateBorder = function(animated) {
+    return this._activateBorder(animated, this.BORDER_ACTIVE_SETTINGS);
+  };
+
+  AgentCircle.prototype.showFill = function(animated) {
+    var t = 0, t1 = 300;
+    var obj = this.fill;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.opacity(this.SETTINGS['fill-opacity']);
+
+    return promise(t);
+  };
+
+  AgentCircle.prototype.hideFill = function(animated) {
+    var t = 0, t1 = 300;
+    var obj = this.fill;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.opacity(0);
+
+    return promise(t);
+  };
+
+  AgentCircle.prototype.colorize = function(color, animated) {
+    var t = 0, t1 = 200;
+    var obj = this.border;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1, 'cubicIn');
+    }
+    obj.attr({'stroke': color});
+
+    return promise(t);
+  };
+
+  window.AgentCircle = AgentCircle;
+})();
+(function () {
+  'use strict';
+
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
+    });
   }
 
-  callMethod(chain[0]);
-};
+  function AgentLine(draw, params) {
+    this.sx = params.cx;
+    this.sy = params.cy;
+    this.ex = params.mlx;
+    this.ey = params.mly;
+    this.color = params.color;
 
+    this.SETTINGS = Object.assign({}, params.line);
+    this.SETTINGS.stroke = this.color;
+    this.SETTINGS['stroke-linecap'] = "round";
+    this.SETTINGS['stroke-dasharray'] = '5 5';
+    this.SETTINGS.a = Random.range(10, 1000)
 
-Tangle.prototype.createSVG = function(event) {
-  this.draw = SVG(this.svgId);
-  this.draw.addClass('overflowed');
+    this.group = draw.group();
 
-  this.graph = new Graph(this.draw, VERTEXES_TANGLE, gridParams_TANGLE);
-
-  this.mlCloud = new MLCloud(this.draw, 250, 150);
-  event();
-};
-
-Tangle.prototype.drawTangle = function(event) {
-  setTimeout(function () {
-    event();
-  }, 300);
-};
-
-Tangle.prototype.drawmlHosts = function(event) {
-  this.mlHosts = [];
-  var mlhostGroup = this.draw.group();
-
-  var _this = this, t = 0;
-  this.graph.toColor(gridParams_TANGLE.fill1, gridParams_TANGLE.stroke1, 4500);
-  VERTEXES_TANGLE.forEach(function (vertex, i) {
-    if (mlHosts_TANGLE.indexOf(vertex.idx) > -1) {
-
-      setTimeout(function () {
-        var isLast = (_this.mlHosts.length + 1) == mlHosts_TANGLE.length;
-        var mlhost = new MLNode(mlhostGroup, vertex, gridParams_TANGLE.fill, isLast && event);
-        _this.mlHosts.push(mlhost);
-      }, t);
-
-      t += 500;
-    }
-  });
-};
-
-Tangle.prototype.mlHostsToCluster = function(event) {
-  var _this = this;
-  this.mlHosts.forEach(function (node, i) {
-    var isLast = i == _this.mlHosts.length - 1;
-    node.connectToOther(_this.mlHosts, isLast && event);
-  });
-};
-
-Tangle.prototype.mlClusterToCenter = function(event) {
-  var _this = this;
-
-  function showCloud() {
-    _this.mlCloud.show();
+    this.line = this.draw();
   }
 
-  this.mlHosts.forEach(function (node, i) {
-    var isLast = i == _this.mlHosts.length - 1;
-    node.moveToCenter(_this.mlCloud.cx, _this.mlCloud.cy,
-                      isLast && showCloud,
-                      isLast && event);
-  });
-};
+  AgentLine.prototype.draw = function() {
+    return this.group.line(this.sx, this.sy, this.ex, this.ey).attr(this.SETTINGS);
+  };
 
-Tangle.prototype.drawAgents = function(event) {
-  this.agents = [];
+  AgentLine.prototype.hide = function() {
+    this.line.plot(this.sx, this.sy, this.sx, this.sy);
+  };
 
-  var agentGroup = this.draw.group();
-  this.graph.vertexesGroup.before(agentGroup);
+  AgentLine.prototype.show = function(animated) {
+    var t = 0, t1 = 350, t2 = 500;
 
-  var _colors = Random.shuffle(agentsColors);
-
-  var _this = this;
-  VERTEXES_TANGLE.forEach(function (vertex, i) {
-    if (agentHosts_TANGLE.indexOf(vertex.idx) > -1) {
-      var isLast = (_this.agents.length + 1) == agentHosts_TANGLE.length;
-      var color = _colors[_this.agents.length];
-      var agent = new Agent(
-        agentGroup, _this.mlCloud.cx, _this.mlCloud.cy, vertex, color,
-        isLast && event,
-        _this.mlCloud
-      );
-      _this.agents.push(agent);
+    var obj = this.line;
+    if (animated) {
+      t += t1;
+      obj = this.line.animate(t1, 'cubicOut');
     }
-  });
-};
+    obj.plot(this.sx, this.sy, this.ex, this.ey)
+    if (animated) {
+      t += t2;
+      obj.attr({'opacity': 1, 'stroke-width': 4});
+      obj = obj.animate(t2, 'quadOut');
+    }
+    obj.attr(this.SETTINGS);
 
-Tangle.prototype.customerSendRequest = function(event) {
-  this.mlCloud.show()
-  var agents = Random.shuffle(this.agents);
-  // var agents = this.agents.slice();
-  var _this = this;
+    return promise(t);
+  };
 
-  this.customer = agents.pop();
-  this.providers = agents.slice(0, 3);
+  AgentLine.prototype.activate = function(animated) {
+    var t = 0, t1 = 350;
 
-  this.customer.sendRequest(event, true);
-};
+    var obj = this.line;
+    if (animated) {
+      t += t1;
+      obj = this.line.animate(t1, 'cubicOut');
+    }
+    obj.attr({'opacity': 1, 'stroke-width': 4});
+
+    return promise(t);
+  };
+
+  AgentLine.prototype.deactivate = function(animated) {
+    var t = 0, t1 = 350;
+
+    var obj = this.line;
+    if (animated) {
+      t += t1;
+      obj = this.line.animate(t1, 'cubicIn');
+    }
+    obj.attr(this.SETTINGS);
+
+    return promise(t);
+  };
+
+  AgentLine.prototype.colorize = function(color, animated) {
+    var t = 0, t1 = 400;
+    var obj = this.line;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t, 'cubicIn');
+    }
+    obj.attr({stroke: color});
+    return promise(t);
+  };
+
+  window.AgentLine = AgentLine;
+
+})();
+(function () {
+  'use strict';
+
+  var SPEED = 3000;
+
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
+    });
+  }
+
+  function AgentText(draw, params) {
+    this.sx = params.cx;
+    this.sy = params.cy;
+    this.ex = params.mlx;
+    this.ey = params.mly;
+    this.color = params.color;
+
+    this.SETTINGS = Object.assign({}, params.text);
+    this.SETTINGS.fill = this.color;
+    this.SETTINGS.stroke = this.color;
+    this.mlR = {
+      x1: this.ex - params.mlw,
+      y1: this.ey - params.mlw,
+      x2: this.ex + params.mlw,
+      y2: this.ey + params.mlw,
+    };
+    this.showR = params.circle.r * 0.2;
 
 
-Tangle.prototype.findSolution = function(event) {
-  var _this = this;
-  // this.customer.sendRequest(function () {
-    _this.mlCloud.findSolution(_this.customer, event);
-  // })
-};
+    this.group = draw.group();
+    this.circle = this.drawCircle();
+    this.text = this.drawText();
 
-Tangle.prototype.testProviders = function(event) {
-  var t = 0, d = 500;
-  var _this = this;
+    this.group.opacity(0);
+  }
 
-  function testProviders() {
-    _this.providers.forEach(function (provider, i) {
-      setTimeout(function () {
-        var prev = _this.providers[i - 1];
-        if (prev) prev.deactivate();
-        provider.activate();
-        _this.mlCloud.testProvider(provider.color);
+  AgentText.prototype.drawCircle = function() {
+    var group = this.group.group();
+    var bg = group.circle(this.SETTINGS.r * 2).attr(this.SETTINGS.bg).center(0, 0);
+    var circle = group.circle().attr(this.SETTINGS).center(0, 0);
 
-        if (i == _this.providers.length - 1) {
-          setTimeout(function () {
-            _this.provider = provider;
-            _this.mlCloud.ding(event);
-          }, 150)
-          // _this.provider.startContract(_this.customer.color);
-          // _this.mlCloud.chooseProvider(_this.customer.color, event);
-          // event();
+    group.colorize = function (color) {
+      circle.attr({stroke: color, fill: color});
+    };
+
+    return group;
+  };
+
+  AgentText.prototype.drawText = function() {
+    var text = this.group.plain('?');
+    text.font({
+      fill: '#fff',
+      size: this.SETTINGS.fz,
+    }).center(0, 0);
+    return text;
+  };
+
+
+  AgentText.prototype.send = function(text, earlyStart) {
+    this.text.plot(text || '?').center(0, 0);
+    this.group.move(this.sx, this.sy);
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.group.animate(SPEED).move(_this.ex, _this.ey).during(function (pos, morph) {
+        var x = this.cx();
+        var y = this.cy();
+
+        var dx = Math.abs(x - _this.sx), dy = Math.abs(y - _this.sy);
+        if (dx > _this.showR && dy > _this.showR) {
+          var opacity = SVG.easing['expoOut'](pos * 2);
+          this.opacity(opacity);
+        }
+
+        var inML = x > _this.mlR.x1 && x < _this.mlR.x2 &&
+                   y > _this.mlR.y1 && y < _this.mlR.y2;
+        if (inML && earlyStart) {
+          resolve();
+        } else if (pos > 0.99) {
+          resolve();
+        }
+      });
+    });
+  };
+
+  AgentText.prototype.receive = function(text) {
+    this.text.plot(text || '?').center(0, 0);
+    this.group.move(this.ex, this.ey);
+    this.group.opacity(1);
+
+    var _this = this;
+    this.group.animate(SPEED).move(this.sx, this.sy).during(function (pos) {
+      var x = this.cx();
+      var y = this.cy();
+
+      if (Math.abs(x - _this.sx) < _this.showR &&
+          Math.abs(y - _this.sy) < _this.showR) {
+        var opacity = SVG.easing['expoIn'](pos / 2);
+        this.opacity(opacity);
+      }
+    });
+
+    return promise(SPEED);
+  };
+
+  AgentText.prototype.colorize = function(color) {
+    this.circle.colorize(color);
+  };
+
+  window.AgentText = AgentText;
+
+})();
+(function () {
+  'use strict';
+
+  var NOOP = Function.prototype;
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
+
+  function CognIOTA(params) {
+    this.root = params.root;
+
+    this.mlx = params.mlx;
+    this.mly = params.mly;
+
+    this.vertexes = params.vertexes;
+
+    this.method = this[params.method] || NOOP;
+    this.preparationMethods = params.preparationMethods == void 0 ? [] : params.preparationMethods;
+
+    this._init();
+  };
+
+  CognIOTA.prototype.play = function(end) {
+    var beforePlayTime = 1000;
+    var afterPlayTime = 1000;
+    var _this = this;
+
+    setTimeout(function () {
+      _this.method(function () {
+        setTimeout(end, afterPlayTime);
+      });
+    }, beforePlayTime);
+  };
+
+  CognIOTA.prototype.out = function() {
+    var _this = this;
+    _this.method(NOOP, {clear: true});
+    // setTimeout(function () {
+    // }, 100);
+  };
+
+  /////
+
+  CognIOTA.prototype._init = function() {
+    this.draw = this.root.group();
+    this.graph = new Graph(this.draw, this.vertexes.array, this.vertexes.params);
+    this.mlCloud = new MLCloud(this.draw, this.mlx, this.mly);
+
+    this.init();
+
+    var _this = this;
+    function promisesStack(i, promise) {
+      var methodName = _this.preparationMethods[i];
+      if (!methodName) return;
+
+      return new Promise(function (resolve) {
+        return _this[methodName](resolve, {forced: true});
+      }).then(function () {
+        promisesStack(i + 1);
+      });
+    }
+    promisesStack(0, NOOPPromise);
+  };
+
+  CognIOTA.prototype.init = function() {
+    // pass
+  };
+
+  window.CognIOTA = CognIOTA;
+})();
+(function () {
+  'use strict';
+
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
+    });
+  }
+
+  var HEX_SETTINGS = {
+    radius: 30,
+    fill: '#00d6ff',
+    edges: 8,
+    stroke: '#00d6ff',
+    'stroke-width': 0,
+  };
+
+  var SHADOW_SETTINGS = {
+    edges: HEX_SETTINGS.edges,
+    fill: HEX_SETTINGS.fill,
+    radius: HEX_SETTINGS.radius * 1.3,
+    opacity: 0.3,
+  };
+
+  var LOGO_SETTINGS = {
+    width: 50,
+    height: 50,
+    url: 'dist/logo/l4.png',
+  };
+
+  function MLCloud (draw, cx, cy) {
+    this.cx = cx;
+    this.cy = cy;
+    // this.color = '#0060ff';
+    // this.ip = 'cogniOTA';
+
+    this.group = draw.group();
+    this.group.move(this.cx, this.cy);
+    this.group.width(SHADOW_SETTINGS.radius * 2).height(SHADOW_SETTINGS.radius * 2);
+
+    this.shadow = this.drawShadow();
+    this.hex = this.drawHex();
+    this.logo = this.drawLogo();
+
+    this.group.opacity(0);
+  }
+
+  MLCloud.prototype.drawShadow = function() {
+    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS);
+    shadow.opacity(0);
+
+    setTimeout(function () {
+      shadow.opacity(1).attr(SHADOW_SETTINGS).center(0, 0);
+    }, 10);
+    return shadow;
+  };
+
+  MLCloud.prototype.drawHex = function() {
+    var hex = this.group.polygon().ngon(HEX_SETTINGS);
+    hex.opacity(0);
+
+    var _this = this;
+    setTimeout(function () {
+      _this.width = hex.node.getBBox().width;
+      hex.opacity(1).attr(HEX_SETTINGS).center(0, 0);
+    }, 10);
+    return hex;
+  };
+
+  MLCloud.prototype.drawLogo = function() {
+    var logo = this.group.image(
+      LOGO_SETTINGS.url,
+      LOGO_SETTINGS.width,
+      LOGO_SETTINGS.height
+    );
+    logo.move(-LOGO_SETTINGS.width / 2, -LOGO_SETTINGS.height / 2);
+    return logo;
+  };
+
+  MLCloud.prototype.show = function() {
+    this.group.opacity(1);
+  };
+
+  MLCloud.prototype.hide = function() {
+    this.group.opacity(0);
+  };
+
+  MLCloud.prototype.fallInColor = function(color, animated) {
+    var t = 0, t1 = 200, d1 = 350, t2 = 180, d2 = 100, t3 = 400;
+    var k1 = 1, k2 = 1.08;
+    this.hex.attr({'stroke': color});
+
+    var hex, shadow;
+
+    if (animated) {
+      shadow = this.shadow.animate(t1);
+      this.hex.delay(t1);
+      t += t1;
+    } else {
+      shadow = this.shadow;
+    }
+    shadow.fill(color);
+
+    if (animated) {
+      hex = this.hex.delay(d1).animate(t2);
+      this.shadow.delay(d1).animate(t2).scale(0.8);
+      shadow = this.shadow.delay(d2).animate(t3, 'elastic');
+      t += d1 + t2 + d2 + t3 - 300;
+    } else {
+      hex = this.hex;
+      shadow = this.shadow;
+    }
+    hex.ngon({edges: HEX_SETTINGS.edges, radius: 0.1})
+       .attr({'stroke-width': this.width * k1})
+       .center(0, 0);
+    shadow.scale(k2);
+
+    return promise(t);
+  };
+
+  MLCloud.prototype.toDefault = function () {
+    this.hex.scale(1).ngon(HEX_SETTINGS).attr(HEX_SETTINGS).center(0, 0);
+    this.shadow.scale(1).ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(0, 0);
+  };
+
+  MLCloud.prototype.ding = function(reversed) {
+    var t = 300;
+    this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
+
+    return promise(t * 2);
+  };
+
+  MLCloud.prototype.colorShadow = function(color, animated) {
+    var t = 0, t1 = 200;
+
+    var obj = this.shadow;
+
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.fill(color);
+
+    return promise(t);
+  };
+
+  MLCloud.fill = HEX_SETTINGS.fill;
+  MLCloud.edges = HEX_SETTINGS.edges;
+  MLCloud.r = SHADOW_SETTINGS.radius;
+
+  window.MLCloud = MLCloud;
+
+})();
+(function () {
+  'use strict';
+
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
+
+  function promise(t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
+    });
+  }
+
+  var HEX_SETTINGS = {
+    fill: '#00d6ff',
+    edges: 6,
+    edgesStart: 3,
+    radius: 15,
+  };
+
+  var SHADOW_SETTINGS = {
+    fill: HEX_SETTINGS.fill,
+    edges: HEX_SETTINGS.edges,
+    radius: HEX_SETTINGS.radius * 1.3,
+    opacity: 0.3,
+  };
+
+  var LINE_SETTINGS = {
+    stroke: HEX_SETTINGS.fill,
+    'stroke-width': 1.5,
+    opacity: 0.7,
+  };
+
+  function MLHost(draw, vertex) {
+    this.cx = vertex.pos[0];
+    this.cy = vertex.pos[1];
+
+    this.HIDE_PARAMS = {
+      edges: HEX_SETTINGS.edgesStart,
+      radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+      fill: TangleCognIOTA.GRAPH_SETTINGS.stroke
+    };
+
+    this.group = draw.group().width(100);
+    this.shadow = this.drawShadow();
+    this.hex = this.drawHex(MLCloud.fill);
+  }
+
+  MLHost.prototype.drawShadow = function() {
+    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS).opacity(0);
+    var _this = this;
+    setTimeout(function () {
+      shadow.center(_this.cx, _this.cy).attr(SHADOW_SETTINGS)
+    }, 10);
+    return shadow;
+  };
+
+  MLHost.prototype.drawHex = function() {
+    var hex = this.group.polygon().ngon(HEX_SETTINGS).opacity(0);
+    // it takes a little to change the path
+    hex.attr(HEX_SETTINGS);
+    var _this = this;
+    setTimeout(function () {
+      hex.center(_this.cx, _this.cy).opacity(1)
+    }, 10);
+    return hex;
+  };
+
+  MLHost.prototype.showHex = function() {
+    var t1 = 70;
+
+    this.hex.fill(this.HIDE_PARAMS.fill);
+
+    var r = TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+        edges = HEX_SETTINGS.edgesStart;
+
+    var steps = HEX_SETTINGS.edges - HEX_SETTINGS.edgesStart,
+        rStep = (HEX_SETTINGS.radius - r) / steps,
+        totalT = t1 * steps;
+
+    for (; edges <= HEX_SETTINGS.edges; edges++, r+=rStep) {
+      var hexAnimation = this.hex.animate(t1);
+      hexAnimation.ngon({edges: edges, radius: r}).center(this.cx, this.cy);
+      if (edges >= HEX_SETTINGS.edges - 1) {
+        hexAnimation.fill(HEX_SETTINGS.fill);
+      }
+    }
+
+    return promise(t1 * steps);
+  };
+
+  MLHost.prototype.showShadow = function() {
+    var t = 300, d = 80;
+    this.shadow.delay(100)
+               .animate(300, 'backOut')
+                .ngon({edges: SHADOW_SETTINGS.edges, radius: SHADOW_SETTINGS.radius})
+                .center(this.cx, this.cy);
+
+    return promise(t + d);
+  };
+
+  MLHost.prototype.hide = function() {
+    this.hex.ngon(this.HIDE_PARAMS)
+            .fill('transparent')
+            .opacity(1).center(this.cx, this.cy);
+
+    this.shadow.ngon({edges: SHADOW_SETTINGS.edges, radius: 0.1})
+               .opacity(SHADOW_SETTINGS.opacity)
+               .center(this.cx, this.cy);
+  };
+
+  MLHost.prototype.show = function(animated) {
+    if (animated) {
+      var _this = this;
+      return new Promise(function (resolve) {
+        _this.showHex(animated).then(function () {
+          _this.showShadow(animated).then(resolve);
+        });
+      });
+    } else {
+      var params = {
+        edges: HEX_SETTINGS.edgesStart,
+        radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+        fill: TangleCognIOTA.GRAPH_SETTINGS.fill
+      };
+      this.hex.ngon(HEX_SETTINGS).center(this.cx, this.cy).attr(HEX_SETTINGS).opacity(1);
+      this.shadow.ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(this.cx, this.cy);
+      return NOOPPromise;
+    }
+  };
+
+  MLHost.prototype.connectTo = function(neightbors) {
+    var _this = this;
+
+    var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
+    var linesGroup = this.linesGroup = this.group.group();
+
+    neightbors.forEach(function (n) {
+      var pos = [_this.cx, _this.cy];
+      var line = linesGroup.line(new SVG.PointArray([pos, pos]));
+      line.attr(LINE_SETTINGS).opacity(0.3);
+
+      var middle = [
+        _this.cx - ((_this.cx - n.cx) / 2),
+        _this.cy - ((_this.cy - n.cy) / 2)
+      ];
+      line.animate(t1, 'sineOut').plot(new SVG.PointArray([pos, middle]));
+
+      line.delay(d1).animate(t2, 'sineOut').opacity(1);
+      line.animate(t3, 'sineIn').opacity(LINE_SETTINGS.opacity);
+    });
+
+    return promise(t1 + d1 + t2 + t3);
+  };
+
+  MLHost.prototype.toCenter = function(cx, cy) {
+    var t1 = 100, t2 = 250;
+    var _this = this;
+
+    this.linesGroup.animate(t1).opacity(0).once(1, function () {
+      _this.deleteLines();
+    });
+
+    this.hex.animate(t2, 'backIn').center(cx, cy);
+    this.shadow.animate(t2, 'backIn').center(cx, cy);
+
+    return promise(t2);
+  };
+
+  MLHost.prototype.disappear = function(cx, cy, r, e) {
+    var t1 = 300;
+    function disappear (elem, params) {
+      elem.animate(t1, '>').ngon({radius: r * 1.6, edges: e})
+                           .center(cx, cy)
+                           .opacity(0);
+    }
+
+    disappear(this.hex);
+    disappear(this.shadow);
+
+    return promise(t1);
+  };
+
+  MLHost.prototype.deleteLines = function() {
+    this.linesGroup.remove();
+  };
+
+  window.MLHost = MLHost;
+})();
+(function () {
+  'use strict';
+
+  window.Random = {
+    range: function range(min, max) {
+      return Math.round(Math.random() * (max - min) + min);
+    },
+    choice: function choice(arr) {
+      var max = arr.length;
+      if (max === void 0) {
+        arr = Object.keys(arr);
+        max = arr.length;
+      }
+      var n = this.range(0, max - 1);
+      return arr[n];
+    },
+    shuffle: function shuffle(_a) {
+      var a = _a.slice();
+      var j, x, i;
+      for (i = a.length; i; i--) {
+          j = Math.floor(Math.random() * i);
+          x = a[i - 1];
+          a[i - 1] = a[j];
+          a[j] = x;
+      }
+      return a;
+    },
+    deviate: function deviate(i, d) {
+      var a = this.range(d * -1, d);
+      return i + a;
+    }
+  };
+
+})();
+(function () {
+  // 'use strict';
+
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
+
+  var VERTEXES = [
+    {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
+    {idx: 2, neightbors: [3, 6], pos: [137, 25]},
+    {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
+    {idx: 4, neightbors: [5, 8], pos: [361, 25]},
+    {idx: 5, neightbors: [9, 10], pos: [475, 25]},
+
+    {idx: 6, neightbors: [11, 12], pos: [25, 108]},
+    {idx: 7, neightbors: [13], pos: [137, 108]},
+    {idx: 8, neightbors: [9, 13], pos: [255, 108]},
+    {idx: 9, neightbors: [14, 20], pos: [361, 108]},
+    {idx: 10, neightbors: [15], pos: [475, 108]},
+
+    {idx: 11, neightbors: [12, 18], pos: [25, 192]},
+    {idx: 12, neightbors: [13, 17, 18], pos: [97, 192]},
+    {idx: 13, neightbors: [14, 19], pos: [170, 192]},
+    {idx: 14, neightbors: [15], pos: [292, 192]},
+    {idx: 15, neightbors: [16], pos: [413, 192]},
+    {idx: 16, neightbors: [20, 21], pos: [475, 192]},
+
+    {idx: 17, neightbors: [18], pos: [25, 275]},
+    {idx: 18, neightbors: [19], pos: [137, 275]},
+    {idx: 19, neightbors: [20], pos: [255, 275]},
+    {idx: 20, neightbors: [21], pos: [361, 275]},
+    {idx: 21, neightbors: [], pos: [475, 275]},
+  ];
+
+  var GRAPH_SETTINGS = {
+    'r': 6,
+    'stroke-width': 1,
+    'stroke': '#2bd46c',
+  };
+
+  var MLHOSTS_IDXS = [2, 4, 6, 9, 18, 21];
+  var AGENTS_IDXS = [2, 4, 9, 12, 18, 21];
+
+  var COLORS = [
+    '#ff80ab', // pink
+    '#f57c00',  // orange
+    '#1de9b6', // blue
+    '#b2ff59', // yellow
+    // 'rgb(75, 255, 0)',  // green
+    '#6a1b9a', // purple
+    '#d50000',  // red
+  ];
+
+  var AGENT_CIRCLE_SETTINGS = {
+    r: GRAPH_SETTINGS.r * 1.7,
+    border: 1,
+
+    bg: {
+      r: GRAPH_SETTINGS.r,
+      fill: GRAPH_SETTINGS.stroke,
+    },
+
+    'fill-opacity': 0.4,
+  };
+
+  var AGENT_LINE_SETTINGS = {
+    'stroke-width': 2,
+  };
+
+  var AGENT_TEXT_SETTINGS = {
+    r: AGENT_CIRCLE_SETTINGS.r * 0.8,
+    'stroke-width': 1,
+    'fill-opacity': 0.5,
+    bg: {
+      fill: '#63749b',
+      opacity: 0.7,
+    },
+    fz: AGENT_CIRCLE_SETTINGS.r * 0.8 * 1.8
+  };
+
+  function TangleCognIOTA (params) {
+    params.vertexes = {
+      array: VERTEXES,
+      params: GRAPH_SETTINGS,
+    };
+    params.mlx = 500 / 2;
+    params.mly = 300 / 2;
+    CognIOTA.call(this, params);
+
+  }
+  // inherit TangleCognIOTA
+  TangleCognIOTA.prototype = Object.create(CognIOTA.prototype);
+
+  // correct the constructor pointer because it points to TangleCognIOTA
+  TangleCognIOTA.prototype.constructor = TangleCognIOTA;
+
+
+  TangleCognIOTA.prototype.init = function() {
+    this._createShops();
+    this._createMLNodes();
+  };
+  //////
+
+  TangleCognIOTA.prototype._createShops = function() {
+    var _this = this;
+    var group = this.draw.group();
+    this.mlCloud.group.forward();
+
+    this.agents = AGENTS_IDXS.map(function (idx, i) {
+      var vertex = _this.graph.vertexes[idx];
+      var agent = new Agent(group, {
+        circle: AGENT_CIRCLE_SETTINGS,
+        line: AGENT_LINE_SETTINGS,
+        text: AGENT_TEXT_SETTINGS,
+
+        color: COLORS[i],
+        cx: vertex.pos[0],
+        cy: vertex.pos[1],
+        mlx: _this.mlx,
+        mly: _this.mly,
+        mlw: 60,
+      });
+      agent.circle.hideFill(false);
+      agent.hide();
+      return agent;
+    });
+  };
+
+  TangleCognIOTA.prototype._createMLNodes = function() {
+    var _this = this;
+    var group = this.draw.group();
+
+    this.mlhosts = MLHOSTS_IDXS.map(function (idx) {
+      var vertex = _this.graph.vertexes[idx];
+      var mlhost = new MLHost(group, vertex);
+      mlhost.hide();
+      return mlhost;
+    });
+  };
+
+  TangleCognIOTA.prototype._hideMLHosts = function() {
+    this.mlhosts.forEach(function (mlhost) {
+      mlhost.hide();
+    });
+  };
+
+  // params :
+  //    forced: prepare all things for another stage
+  //    clear: remove all after yourself to be able to play again
+
+  TangleCognIOTA.prototype.createTangle = function(end, params) {
+    params = params || {};
+    if (params.forced) {
+      return end();
+    }
+
+    // just show the graph for some time
+    return setTimeout(end, 800);
+  };
+
+  TangleCognIOTA.prototype.createMLNodes = function(end, params) {
+    params = params || {};
+    var _this = this;
+
+    if (params.clear) {
+      return this._hideMLHosts();
+    }
+
+    var d = 250;
+    if (params.forced) {
+      d = 0;
+    }
+    var t = -d;
+    return Random.shuffle(this.mlhosts).forEach(function (mlhost, i) {
+      t += d;
+      return setTimeout(function () {
+        var promise = mlhost.show(!params.forced);
+
+        if (i == _this.mlhosts.length - 1) {
+          return promise.then(end);
         }
       }, t);
 
-      t += d;
+    });
+  };
+
+  TangleCognIOTA.prototype.createMLCloud = function(end, params) {
+    params = params || {};
+
+    if (params.forced) {
+      this.mlCloud.show();
+      this._hideMLHosts();
+      return end();
+    } else if (params.clear) {
+      this.mlCloud.hide();
+      return this.mlhosts.forEach(function (mlhost) {
+        mlhost.deleteLines();
+        return mlhost.show();
+      });
+    }
+
+    var _this = this;
+
+    var a;
+    this.mlhosts.forEach(function (mlhost) {
+      a = mlhost.connectTo(_this.mlhosts);
     });
 
-    setTimeout(function () {
-    }, t);
-  }
+    return a.then(function () {
+      var b;
+      _this.mlhosts.forEach(function (mlhost) {
+        b = mlhost.toCenter(_this.mlx, _this.mly);
+      });
 
-  testProviders();
+      return b.then(function () {
+        var c;
+        setTimeout(function () {
+          _this.mlCloud.show();
+        }, 100);
 
-};
+        _this.mlhosts.forEach(function (mlhost) {
+          c = mlhost.disappear(_this.mlx, _this.mly, MLCloud.r, MLCloud.edges);
+        });
 
-
-Tangle.prototype.providerSendResponse = function(event) {
-  var _this = this;
-
-  function receiveResponse() {
-    _this.customer.receiveResponse(function () {
-      _this.mlCloud.fallOutColor(function () {
-        _this.customer.deactivate();
-        _this.provider.deactivate();
-        event();
+        return c.then(end);
       });
     });
+  };
+
+  TangleCognIOTA.prototype.shopRequests = function(end, params) {
+    params = params || {};
+    var _this = this;
+
+    if (params.clear) {
+      this.agents.forEach(function (agent) {
+        agent.hide();
+      });
+      return this.shop.deactivate();
+    }
+
+    var promise, animated = !params.forced;
+    this.agents.forEach(function (agent) {
+      promise = agent.show(animated);
+    });
+
+    return promise.then(function () {
+      _this.shop = _this.agents[0];
+      _this.providers = [1, 2, 4].map(function (i) {return _this.agents[i];});
+      _this.provider = _this.providers[_this.providers.length - 1];
+
+      if (params.forced) {
+        return _this.shop.activate(false).then(end);
+      }
+
+      return setTimeout(function () {
+        _this.shop.sendRequest().then(end);
+      }, 1000);
+    });
+  };
+
+  TangleCognIOTA.prototype.mlSendsResponse = function(end, params) {
+    params = params || {};
+    if (params.clear) {
+      return this.mlCloud.toDefault();
+    }
+
+    var promise = this.mlCloud.fallInColor(this.shop.color, !params.forced);
+    if (params.forced) {
+      return promise.then(end);
+    }
+
+    var _this = this;
+    return promise.then(function () {
+      return _this.mlCloud.ding().then(function () {
+        return _this.shop.receiveResponse().then(end);
+      });
+    });
+  };
+
+  TangleCognIOTA.prototype.mlAuction = function(end, params) {
+    params = params || {};
+    if (params.clear) {
+      this.provider.deactivate(false);
+      return this.mlCloud.colorShadow(this.shop.color, false);
+    }
+
+    var _this = this;
+    // var agents = [this.agents[1], this.agents[2], this.agents[4]];
+    // this.provider = agents[2];
+
+    if (params.forced) {
+      _this.provider.activate(false);
+      _this.mlCloud.colorShadow(_this.provider.color, false);
+      return end();
+    } else {
+      var t1 = 200, t2 = 100;
+
+      function promisesStack(i, promise) {
+        var agent = _this.providers[i];
+        if (!agent) return end();
+
+        return new Promise(function (resolve) {
+          agent.activate(true, false);
+          return _this.mlCloud.colorShadow(agent.color, true).then(function () {
+            setTimeout(function () {
+              if (agent.idx == _this.provider.idx) {
+                _this.mlCloud.ding().then(resolve);
+              } else {
+                return agent.deactivate(true, false).then(function () {
+                  return setTimeout(resolve, t2);
+                });
+              }
+            }, t1);
+          });
+        }).then(function () {
+          promisesStack(i + 1);
+        });
+      }
+
+      return promisesStack(0, NOOPPromise);
+    }
+
+  };
+
+  TangleCognIOTA.prototype.mlChooseProvider = function(end, params) {
+    params = params || {};
+    if (params.clear) {
+      this.mlCloud.colorShadow(this.provider.color, false);
+      return this.provider.colorize(this.provider.color, false, false);
+    }
+    if (params.forced) {
+      return;
+    }
+    var _this = this;
+
+    this.mlCloud.colorShadow(this.shop.color, true);
+    this.mlCloud.ding();
+    this.provider.colorize(this.shop.color);
+
+    return this.provider.receiveRequest().then(function () {
+      return _this.provider.sendResponse().then(function () {
+        _this.shop.receiveResponse().then(end);
+      });
+    });
+  };
+
+
+  TangleCognIOTA.GRAPH_SETTINGS = GRAPH_SETTINGS;
+
+  window.TangleCognIOTA = TangleCognIOTA;
+})();
+(function () {
+  'use strict';
+
+  var NOOP = Function.prototype;
+  var NOOPPromise = new Promise(function (resolve) {resolve()});
+
+  var SLIDESHOW_CLASSES = {
+    description: 'firstPage-main-slideshow-item--description'
+  };
+
+  var N = 6;
+
+  function TangleSlideshow(parent) {
+    this.parent = parent;
+    this.states = ['description', 'svg'];
+
+    this.descriptionTime = 2000;
+
+    var _this = this;
+    this.items = [];
+    this.methods = [];
+    var slides = this.parent.querySelectorAll('li');
+
+    var count = slides.length;
+    this.parent.style.width = 100 * count + '%';
+    this.step = 100 / count;
+    slides.forEach(function (elem, i) {
+      // if (i > N) return
+      var method = elem.getAttribute('method');
+      var item =  _this.createSlide(elem, i, method);
+      _this.items.push(item);
+      _this.methods.push(method);
+
+    });
+
+    this.currentN = -1;
+    this.currState = this.states.length;
+    // this.currState = 0;
+    // this.currentN = N;
+
+
+    _this.goNext();
   }
 
+  TangleSlideshow.prototype.createSlide = function(elem, i, method) {
+    var descriptionSlide = this.createDescriptionSlide(elem, i);
+    var svgSlide = this.createSVGSlide(elem, i, method);
+    var _this = this;
+    return {
+      play: function () {
+        if (_this.states[_this.currState] == 'description') {
+          return descriptionSlide.play();
+        } else {
+          return svgSlide.play();
+        }
+      },
+      out: function () {
+        return svgSlide.out();
+      },
+    };
+  };
 
-  this.mlCloud.chooseProvider(this.customer.color);
-  this.provider.receiveRequest(this.customer.color, function () {
-    _this.provider.sendResponse(function () {
-      // _this.provider.deactivate();
-      receiveResponse();
-      // _this.mlCloud.receiveResponse(receiveResponse);
+  TangleSlideshow.prototype.createDescriptionSlide = function(elem, i) {
+
+    var _this = this;
+    return {
+      play: function () {
+        return new Promise(function (resolve) {
+          classie.add(elem, SLIDESHOW_CLASSES.description);
+
+          setTimeout(resolve, _this.descriptionTime);
+        });
+      }
+    };
+  };
+
+  TangleSlideshow.prototype.createSVGSlide = function(elem, i, method) {
+    var svgParent = elem.querySelector('[svg-parent]');
+    var svgId = 'fisrtPageSVG' + i;
+    svgParent.setAttribute('id', svgId);
+
+    var cogniota = new TangleCognIOTA({
+      root: SVG(svgId),
+      method: method,
+      preparationMethods : this.methods.slice(),
     });
-  });
 
+    var _this = this;
+    return {
+      play: function () {
+        return new Promise(function (resolve, reject) {
+          classie.remove(elem, SLIDESHOW_CLASSES.description);
+
+          cogniota.play(resolve);
+        });
+      },
+      out: function () {
+        cogniota.out();
+      }
+    };
+  };
+
+  /////////////////////
+
+  TangleSlideshow.prototype.goNext = function() {
+    var _this = this;
+
+    this.currState += 1;
+
+    var state = this.states[this.currState];
+    var slide = this.items[this.currentN];
+    if (!state) {
+      if (slide) slide.out();
+      this.currState = 0;
+
+      this.currentN += 1;
+      if (this.currentN > this.items.length - 1) {
+        this.currentN = 0;
+      }
+      slide = this.items[this.currentN];
+    }
+
+    var translateVal = -1 * this.currentN * this.step;
+    this.parent.style.WebkitTransform = 'translate3d(' + translateVal + '%,0,0)';
+    this.parent.style.transform = 'translate3d(' + translateVal + '%,0,0)';
+
+    slide.play().then(function () {
+      _this.goNext();
+    });
+  };
+
+  TangleSlideshow.prototype.goPrev = NOOP;
+
+
+
+  window.TangleSlideshow = TangleSlideshow;
+})();
+/*!
+ * classie v1.0.1
+ * class helper functions
+ * from bonzo https://github.com/ded/bonzo
+ * MIT license
+ * 
+ * classie.has( elem, 'my-class' ) -> true/false
+ * classie.add( elem, 'my-new-class' )
+ * classie.remove( elem, 'my-unwanted-class' )
+ * classie.toggle( elem, 'my-class' )
+ */
+
+/*jshint browser: true, strict: true, undef: true, unused: true */
+/*global define: false, module: false */
+
+( function( window ) {
+
+'use strict';
+
+// class helper functions from bonzo https://github.com/ded/bonzo
+
+function classReg( className ) {
+  return new RegExp("(^|\\s+)" + className + "(\\s+|$)");
+}
+
+// classList support for class management
+// altho to be fair, the api sucks because it won't accept multiple classes at once
+var hasClass, addClass, removeClass;
+
+if ( 'classList' in document.documentElement ) {
+  hasClass = function( elem, c ) {
+    return elem.classList.contains( c );
+  };
+  addClass = function( elem, c ) {
+    elem.classList.add( c );
+  };
+  removeClass = function( elem, c ) {
+    elem.classList.remove( c );
+  };
+}
+else {
+  hasClass = function( elem, c ) {
+    return classReg( c ).test( elem.className );
+  };
+  addClass = function( elem, c ) {
+    if ( !hasClass( elem, c ) ) {
+      elem.className = elem.className + ' ' + c;
+    }
+  };
+  removeClass = function( elem, c ) {
+    elem.className = elem.className.replace( classReg( c ), ' ' );
+  };
+}
+
+function toggleClass( elem, c ) {
+  var fn = hasClass( elem, c ) ? removeClass : addClass;
+  fn( elem, c );
+}
+
+var classie = {
+  // full names
+  hasClass: hasClass,
+  addClass: addClass,
+  removeClass: removeClass,
+  toggleClass: toggleClass,
+  // short names
+  has: hasClass,
+  add: addClass,
+  remove: removeClass,
+  toggle: toggleClass
 };
 
+// transport
+if ( typeof define === 'function' && define.amd ) {
+  // AMD
+  define( classie );
+} else if ( typeof exports === 'object' ) {
+  // CommonJS
+  module.exports = classie;
+} else {
+  // browser global
+  window.classie = classie;
+}
 
-Tangle.prototype.clear = function(event) {
-  this.draw.addClass('blured');
-  this.draw.delay(100).animate(100, '>').opacity(0);
+})( window );
+(function () {
+  'use strict';
 
-  var _this = this;
-  setTimeout(function () {
-    _this.draw.remove();
-    event();
-  }, 300);
+  function Graph(draw, vertexes, params) {
+    this.vertexes = vertexes.reduce(function (bucket, vertex) {
+      bucket[vertex.idx] = Object.assign({}, vertex);
+      return bucket;
+    }, {});
 
-};
+    this.group = draw.group();
+    this.edgeGroup = this.group.group();
+    this.vertexesGroup = this.group.group();
 
-var VERTEXES_TANGLE = [
-  {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
-  {idx: 2, neightbors: [3, 6], pos: [137, 25]},
-  {idx: 3, neightbors: [4, 7, 8], pos: [255, 25]},
-  {idx: 4, neightbors: [5, 8], pos: [361, 25]},
-  {idx: 5, neightbors: [9, 10], pos: [475, 25]},
+    for (var idx in this.vertexes) {
+      var vertex = this.vertexes[idx];
+      this.createVertex(vertex, params);
+    }
+  }
 
-  {idx: 6, neightbors: [11, 12], pos: [25, 108]},
-  {idx: 7, neightbors: [13], pos: [137, 108]},
-  {idx: 8, neightbors: [9, 13], pos: [255, 108]},
-  {idx: 9, neightbors: [14, 20], pos: [361, 108]},
-  {idx: 10, neightbors: [15], pos: [475, 108]},
+  Graph.prototype.createVertex = function(vertex, params) {
+    var _this = this;
 
-  {idx: 11, neightbors: [12, 18], pos: [25, 192]},
-  {idx: 12, neightbors: [13, 17, 18], pos: [97, 192]},
-  {idx: 13, neightbors: [14, 19], pos: [170, 192]},
-  {idx: 14, neightbors: [15], pos: [242, 192]},
-  {idx: 15, neightbors: [16], pos: [413, 192]},
-  {idx: 16, neightbors: [20, 21], pos: [475, 192]},
+    // var path = Helpers.getCirclePath(params.r);
+    // var gridNode = this.vertexesGroup.path(path);
+    var gridNode = this.vertexesGroup.circle();
+    gridNode.attr({fill: params.stroke, r: params.r}).center(vertex.pos[0], vertex.pos[1]);
+    // this.vertexesGroup.text(vertex.idx + '').center(vertex.pos[0] + 5, vertex.pos[1] + 20);
+    // gridNode.style({cx: vertex.pos[0], cy: vertex.pos[1]})
 
-  {idx: 17, neightbors: [18], pos: [25, 275]},
-  {idx: 18, neightbors: [19], pos: [137, 275]},
-  {idx: 19, neightbors: [20], pos: [255, 275]},
-  {idx: 20, neightbors: [21], pos: [361, 275]},
-  {idx: 21, neightbors: [], pos: [475, 275]},
-];
+    vertex.neightbors.forEach(function (neightborId) {
+      var neightbor = _this.vertexes[neightborId];
+      neightbor.neightbors.push(vertex.idx);
+      _this.edgeGroup.line(new SVG.PointArray([vertex.pos, neightbor.pos]))
+                     .attr(params);
+    });
+  };
 
 
-var mlHosts_TANGLE = [2, 4, 6, 9, 18, 21];
-var agentHosts_TANGLE = [2, 4, 9, 12, 18, 21];
-
-var agentsColors = [
-  'rgb(255, 191, 0)',  // orange
-  'rgb(0, 255, 191)', // blue
-  'rgb(191, 255, 0)', // yellow
-  'rgb(75, 255, 0)',  // green
-  'rgb(255, 64, 255)', // purple
-  'rgb(255, 0, 106)',  // red
-];
-
-var gridParams_TANGLE = {
-  r: 12,
-  w: 1,
-  sw: 1,
-  fill1: '#6f8b82',
-  stroke1: '#5d7e74',
-  fill: '#2bd46c',
-  stroke: '#2bd46c',
-  // color: '#2c9b5a',
-  // color: 'yellow',
-  // color: '#f1f1b8',
-  // color: '#b3f7ad',
-};
-
- var mlNodeCloudParams = {
-  // logo
-  logoPath: 'dist/logo/l4.png',
-  logoW: 50,
-  // main
-  r: 30,
-  // color: '#00fff5',
-  color: '#00d6ff',
-  edges: 8,
-  // shadow
-  shadowK: 1.3,
-  shadowOpacity: 0.3,
-};
-function WHouse(draw, vertex, cx, cy, color) {
-  this.cx = vertex.pos[0];
-  this.cy = vertex.pos[1];
-  this.idx = vertex.idx;
-  this.color = color;
-
-  this.group = draw.group();
-  this.w = 35;
-  this.link = new AgentLine(this.group, cx, cy, vertex, this.color);
-  // this.drawCircle(gridParams_SALESMAN.fill, '#f5da98', 1);
-  // this.drawCircle(this.color, '#f5da98', 1);
-  // this.drawCircle(this.color, this.color, 0.6);
-  this.img = this.drawImg();
-  // this.img = this.group.image(
-  //   'https://www.shareicon.net/download/2016/04/04/744533_boxes.svg',
-  //   30, 30).center(this.cx, this.cy - 2);
-  // this.drawCircle(this.color, 0.15);
-  // this.group.plain('W').font({
-  //   'fill': this.color,
-  //   'family': 'Rajdhani',
-  //   'weight': 'bold',
-  //   'size': '14px'
-  // }).center(this.cx, this.cy);
-};
-
-WHouse.prototype.drawImg = function() {
-  var img = this.group.image('dist/cars/storage.png', this.w, this.w);
-  img.center(this.cx, this.cy);
-  return img;
-};
-
-WHouse.prototype.drawCircle = function(stroke, fill, op) {
-  var circle = this.group.rect().attr({
-    'width': 20 * 2,
-    'height': 20 * 2,
-    'fill': fill,
-    'fill-opacity': op,
-    'stroke': stroke,
-    'stroke-width': 2
-  }).center(this.cx, this.cy);
-  return circle;
-};
-// WHouse.prototype.drawCircle = function(stroke, fill, op) {
-//   var circle = this.group.circle().attr({
-//     'r': 20,
-//     // 'fill': '#f8d27b',
-//     'fill': fill,
-//     'fill-opacity': op,
-//     'stroke': stroke,
-//     'stroke-width': 3
-//   }).center(this.cx, this.cy);
-//   return circle;
-// };
-
-WHouse.prototype.showLink = function() {
-  var _this = this;
-  this.link.show(function () {
-    _this.link.opacity(0.25);
-  });
-};
+  window.Graph = Graph;
+})();
