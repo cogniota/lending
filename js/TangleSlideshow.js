@@ -1,8 +1,5 @@
-(function () {
+(function (window) {
   'use strict';
-
-  var NOOP = Function.prototype;
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
   var SLIDESHOW_CLASSES = {
     description: 'firstPage-main-slideshow-item--description'
@@ -16,7 +13,6 @@
 
     this.descriptionTime = 2000;
 
-    var _this = this;
     this.items = [];
     this.methods = [];
     var slides = this.parent.querySelectorAll('li');
@@ -24,13 +20,13 @@
     var count = slides.length;
     this.parent.style.width = 100 * count + '%';
     this.step = 100 / count;
+    var _this = this;
     slides.forEach(function (elem, i) {
       // if (i > N) return
       var method = elem.getAttribute('method');
-      var item =  _this.createSlide(elem, i, method);
+      var item = _this.createSlide(elem, i, method);
       _this.items.push(item);
       _this.methods.push(method);
-
     });
 
     this.currentN = -1;
@@ -129,9 +125,6 @@
     });
   };
 
-  TangleSlideshow.prototype.goPrev = NOOP;
-
-
 
   window.TangleSlideshow = TangleSlideshow;
-})();
+})(window);

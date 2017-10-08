@@ -1,4 +1,4 @@
-(function () {
+(function (window) {
   'use strict';
 
   window.Random = {
@@ -31,4 +31,4 @@
     }
   };
 
-})();
+})(window);

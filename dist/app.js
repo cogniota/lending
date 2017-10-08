@@ -1,7 +1,5 @@
-(function () {
+(function (window) {
   'use strict';
-
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
   function Agent(draw, params) {
     this.cx = params.cx;
@@ -17,16 +15,22 @@
     this.line = new AgentLine(this.group, params);
     this.text = new AgentText(this.group, params);
     this.circle = new AgentCircle(this.group, params);
+    this.img = new AgentImg(this.group, params);
+    this.brackets = new AgentBrackets(this.group, params);
   }
 
   Agent.prototype.hide = function(animated) {
-    this.circle.circleOut(animated);
     this.line.hide();
-    this.group.opacity(0);
+    this.circle.circleOut(animated);
+    this.circle.hideBG(animated);
+    this.circle.hideFill(animated);
+    // this.group.opacity(0);
   };
 
   Agent.prototype.show = function(animated) {
     this.group.opacity(1);
+    this.circle.showFill(true);
+    this.circle.showBG(true);
 
     var _this = this;
     return new Promise(function (resolve) {
@@ -44,7 +48,7 @@
       if (circleIn) {
         circlePromise = _this._circleOutPromise({active: true});
       } else {
-        circlePromise = NOOPPromise.then(function () {
+        circlePromise = window.NOOPPromise.then(function () {
           _this.circle.activateBorder();
         });
       }
@@ -60,17 +64,17 @@
     var _this = this;
     return new Promise(function (resolve) {
       return _this.activate(true, circleIn).then(function () {
-        return _this.text.send('?').then(resolve);
+        return _this.text.send(t).then(resolve);
       });
     });
   };
 
-  Agent.prototype.sendRequest = function() {
-    return this._send('?', true);
+  Agent.prototype.sendRequest = function(t) {
+    return this._send(t || '?', true);
   };
 
-  Agent.prototype.sendResponse = function() {
-    return this._send('!', false);
+  Agent.prototype.sendResponse = function(t) {
+    return this._send(t || '!', false);
   };
 
   Agent.prototype._circleOutPromise = function(params) {
@@ -100,7 +104,7 @@
       if (circleIn) {
         circlePromise = _this._circleOutPromise({deactivate: true});
       } else {
-        circlePromise = NOOPPromise.then(function () {
+        circlePromise = window.NOOPPromise.then(function () {
           _this.circle.hideFill(animated);
           _this.circle.deactivateBorder();
         });
@@ -122,7 +126,7 @@
     return this._receive('!');
   };
 
-  Agent.prototype.receiveRequest = function(first_argument) {
+  Agent.prototype.receiveRequest = function() {
     return this._receive('?');
   };
 
@@ -143,26 +147,116 @@
     } else {
       this.line.colorize(color, false);
       this.circle.colorize(color, false);
-      return NOOPPromise;
+      return window.NOOPPromise;
     }
 
   };
 
+  Agent.prototype.blur = function(blurValue, animateBrackets) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.brackets.hide(animateBrackets).then(function () {
+        return _this.img.blur(blurValue).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.unblur = function(animated) {
+    var _this = this;
+    var a = window.NOOPPromise;
+    if (animated) {
+      a = this.brackets.show();
+    }
+    return new Promise(function (resolve) {
+      return a.then(function () {
+        return _this.img.unblur(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.go = function(cx, cy, animated) {
+    var t = animated ? 1000 : null;
+    var circle = this.circle.group;
+    if (animated) {
+      circle = circle.animate(t);
+    }
+    circle.move(cx, cy);
+
+    this.img.go(cx, cy, t);
+    this.line.go(cx, cy, t);
+
+    return window.timePromise(t);
+  };
+
   window.Agent = Agent;
 
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
 
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
+  function AgentBrackets(draw, params) {
+    this.cx = params.cx;
+    this.cy = params.cy;
+    this.color = params.color;
+
+    if (params.brackets == void 0) {
+      return;
+    }
+
+    this.SETTINGS = Object.assign({}, params.brackets);
+    this.x = -this.SETTINGS.width / 2;
+    this.x2 = this.SETTINGS.width / 2;
+
+    this.group = draw.group().move(this.cx, this.cy);
+
+    this.left = this.draw('[');
+    this.right = this.draw(']');
+  }
+
+  AgentBrackets.prototype.draw = function(t) {
+    return this.group.plain(t).style(this.SETTINGS)
+                              .opacity(0)
+                              .center(this.x, 0);
+  };
+
+  AgentBrackets.prototype.show = function() {
+    if (!this.group) return window.NOOPPromise;
+    var t = 200;
+    this.left.animate(t, '>').opacity(1);
+    this.right.animate(t, '>').cx(this.x2).during(function (pos) {
+      var opacity = SVG.easing['expoOut'](pos);
+      this.opacity(opacity);
+    });
+
+    return window.timePromise(t);
+  };
+
+  AgentBrackets.prototype.hide = function(animated) {
+    if (!this.group) return window.NOOPPromise;
+
+    if (!animated) {
+      this.left.opacity(0);
+      this.right.opacity(0).x(this.x);
+      return window.NOOPPromise;
+    }
+
+    var t = 200;
+
+    this.left.animate(t, '<').opacity(0);
+    this.right.animate(t, '<').cx(this.x).during(function (pos) {
+      var opacity = SVG.easing['expoOut'](1 - pos);
+      this.opacity(opacity);
+    });
+
+    return window.timePromise(t);
+  };
+
+  window.AgentBrackets = AgentBrackets;
+})(window);
+(function (window) {
+  'use strict';
 
   var SPIN_TIME = 250;
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   function AgentCircle(draw, params) {
     this.cx = params.cx;
@@ -181,14 +275,14 @@
 
     this.group = draw.group().move(this.cx, this.cy);
 
-    this.bg = this.draw(this.SETTINGS.bg);
+    this.bg = this.draw(this.SETTINGS.bg).attr('t', 'bg');
 
     this.fill = this.draw({
       stroke: this.color,
       'stroke-width': this.SETTINGS.r * 2,
       opacity: this.SETTINGS['fill-opacity'],
       r: 0.1,
-    });
+    }).attr('t', 'fill');
 
     this.border = this.draw({
       'stroke-width': this.SETTINGS.border,
@@ -197,7 +291,7 @@
       r: this.SETTINGS.r,
       fill: 'transparent',
       stroke: this.color
-    });
+    }).attr('t', 'border');
     this.border.rotate(-90);
   }
 
@@ -251,14 +345,16 @@
     }
     obj.attr(settings);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentCircle.prototype.deactivateBorder = function(animated) {
+    this.circleOut(false);
     return this._activateBorder(animated, this.BORDER_SETTINGS);
   };
 
   AgentCircle.prototype.activateBorder = function(animated) {
+    this.circleIn(false);
     return this._activateBorder(animated, this.BORDER_ACTIVE_SETTINGS);
   };
 
@@ -271,7 +367,19 @@
     }
     obj.opacity(this.SETTINGS['fill-opacity']);
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  AgentCircle.prototype.showBG = function(animated) {
+    var t = 0, t1 = 300;
+    var obj = this.bg;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.opacity(1);
+
+    return window.timePromise(t);
   };
 
   AgentCircle.prototype.hideFill = function(animated) {
@@ -283,7 +391,19 @@
     }
     obj.opacity(0);
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  AgentCircle.prototype.hideBG = function(animated) {
+    var t = 0, t1 = 300;
+    var obj = this.bg;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.opacity(0);
+
+    return window.timePromise(t);
   };
 
   AgentCircle.prototype.colorize = function(color, animated) {
@@ -295,19 +415,91 @@
     }
     obj.attr({'stroke': color});
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  AgentCircle.prototype.hide = function() {
+    this.hideFill(false);
+    this.circleOut(false);
+    this.bg.opacity(0);
   };
 
   window.AgentCircle = AgentCircle;
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
 
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
+  function AgentImg(draw, params) {
+    this.cx = params.cx;
+    this.cy = params.cy;
+    this.color = params.color;
+
+    if (params.img == void 0) {
+      return;
+    }
+
+    this.SETTINGS = Object.assign({}, params.img);
+
+    this.group = draw.group().move(this.cx, this.cy);
+    var _this = this;
+    this.group.filter(function(add) {
+      _this.blurFilter = add.gaussianBlur(0);
     });
+    this.img = this.group.image(this.SETTINGS.src, this.SETTINGS.w, this.SETTINGS.w);
+    this.img.center(0, 0);
   }
+
+  AgentImg.prototype.blur = function(blurValue) {
+    if (!this.group) return window.NOOPPromise;
+    var t = 200;
+    this.blurFilter.animate(t, '<').attr('stdDeviation', blurValue);
+    return window.timePromise(t);
+  };
+
+  AgentImg.prototype.unblur = function(animated) {
+    if (!this.group) return window.NOOPPromise;
+
+    var t = 0, t1 = 200;
+    var obj = this.blurFilter;
+
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1, '>');
+    }
+    obj.attr('stdDeviation', '0 0');
+    return window.timePromise(t);
+  };
+
+  AgentImg.prototype.go = function(cx, cy, t) {
+    var cls = 'flipped';
+    if (cx < this.cx) {
+      this.img.addClass(cls);
+    } else {
+      this.img.removeClass(cls);
+    }
+
+    var obj = this.group;
+    if (t) {
+      obj = obj.animate(t);
+    } else {
+      this.img.removeClass(cls);
+    }
+    obj.move(cx, cy);
+
+    this.cx = cx;
+    this.cy = cy;
+  };
+
+  AgentImg.prototype.update = function(src) {
+    this.img.load(src);
+  };
+
+  window.AgentImg = AgentImg;
+})(window);
+(function (window) {
+  'use strict';
+
+  var ACTIVE_SETTINGS = {'opacity': 1, 'stroke-width': 4, 'stroke-opacity': 1};
 
   function AgentLine(draw, params) {
     this.sx = params.cx;
@@ -335,6 +527,14 @@
     this.line.plot(this.sx, this.sy, this.sx, this.sy);
   };
 
+  AgentLine.prototype.go = function(cx, cy, t) {
+    var obj = this.line;
+    if (t) {
+      obj = obj.animate(t);
+    }
+    obj.plot(cx, cy, this.ex, this.ey);
+  };
+
   AgentLine.prototype.show = function(animated) {
     var t = 0, t1 = 350, t2 = 500;
 
@@ -346,12 +546,12 @@
     obj.plot(this.sx, this.sy, this.ex, this.ey)
     if (animated) {
       t += t2;
-      obj.attr({'opacity': 1, 'stroke-width': 4});
+      obj.attr(ACTIVE_SETTINGS);
       obj = obj.animate(t2, 'quadOut');
     }
     obj.attr(this.SETTINGS);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentLine.prototype.activate = function(animated) {
@@ -362,9 +562,9 @@
       t += t1;
       obj = this.line.animate(t1, 'cubicOut');
     }
-    obj.attr({'opacity': 1, 'stroke-width': 4});
+    obj.attr(ACTIVE_SETTINGS);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentLine.prototype.deactivate = function(animated) {
@@ -377,7 +577,7 @@
     }
     obj.attr(this.SETTINGS);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentLine.prototype.colorize = function(color, animated) {
@@ -388,22 +588,16 @@
       obj = obj.animate(t, 'cubicIn');
     }
     obj.attr({stroke: color});
-    return promise(t);
+    return window.timePromise(t);
   };
 
   window.AgentLine = AgentLine;
 
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
 
   var SPEED = 3000;
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   function AgentText(draw, params) {
     this.sx = params.cx;
@@ -454,7 +648,7 @@
 
 
   AgentText.prototype.send = function(text, earlyStart) {
-    this.text.plot(text || '?').center(0, 0);
+    this.text.plain(text || '?').center(0, 0);
     this.group.move(this.sx, this.sy);
     var _this = this;
     return new Promise(function (resolve) {
@@ -462,11 +656,11 @@
         var x = this.cx();
         var y = this.cy();
 
-        var dx = Math.abs(x - _this.sx), dy = Math.abs(y - _this.sy);
-        if (dx > _this.showR && dy > _this.showR) {
-          var opacity = SVG.easing['expoOut'](pos * 2);
-          this.opacity(opacity);
-        }
+        // var dx = Math.abs(x - _this.sx), dy = Math.abs(y - _this.sy);
+        // if (dx > _this.showR && dy > _this.showR) {
+        // }
+        var opacity = SVG.easing['expoOut'](pos * 2);
+        this.opacity(opacity);
 
         var inML = x > _this.mlR.x1 && x < _this.mlR.x2 &&
                    y > _this.mlR.y1 && y < _this.mlR.y2;
@@ -479,24 +673,28 @@
     });
   };
 
-  AgentText.prototype.receive = function(text) {
-    this.text.plot(text || '?').center(0, 0);
+  AgentText.prototype.receive = function(text, cx, cy) {
+    cx = cx || this.sx;
+    cy = cy || this.sy;
+
+    this.text.plain(text || '?').center(0, 0);
     this.group.move(this.ex, this.ey);
     this.group.opacity(1);
 
     var _this = this;
-    this.group.animate(SPEED).move(this.sx, this.sy).during(function (pos) {
+    this.group.animate(SPEED).move(cx, cy).during(function (pos) {
       var x = this.cx();
       var y = this.cy();
 
-      if (Math.abs(x - _this.sx) < _this.showR &&
-          Math.abs(y - _this.sy) < _this.showR) {
+      if (Math.abs(x - cx) < _this.showR &&
+          Math.abs(y - cy) < _this.showR) {
         var opacity = SVG.easing['expoIn'](pos / 2);
         this.opacity(opacity);
       }
+
     });
 
-    return promise(SPEED);
+    return window.timePromise(SPEED);
   };
 
   AgentText.prototype.colorize = function(color) {
@@ -505,12 +703,9 @@
 
   window.AgentText = AgentText;
 
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
-
-  var NOOP = Function.prototype;
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
   function CognIOTA(params) {
     this.root = params.root;
@@ -520,9 +715,8 @@
 
     this.vertexes = params.vertexes;
 
-    this.method = this[params.method] || NOOP;
+    this.method = this[params.method] || window.NOOP;
     this.preparationMethods = params.preparationMethods == void 0 ? [] : params.preparationMethods;
-
     this._init();
   };
 
@@ -538,11 +732,9 @@
     }, beforePlayTime);
   };
 
-  CognIOTA.prototype.out = function() {
+  CognIOTA.prototype.out = function(end) {
     var _this = this;
-    _this.method(NOOP, {clear: true});
-    // setTimeout(function () {
-    // }, 100);
+    _this.method(end || window.NOOP, {clear: true});
   };
 
   /////
@@ -554,34 +746,153 @@
 
     this.init();
 
-    var _this = this;
-    function promisesStack(i, promise) {
-      var methodName = _this.preparationMethods[i];
-      if (!methodName) return;
+    this.initPrepare();
+  };
 
-      return new Promise(function (resolve) {
-        return _this[methodName](resolve, {forced: true});
-      }).then(function () {
-        promisesStack(i + 1);
-      });
-    }
-    promisesStack(0, NOOPPromise);
+  CognIOTA.prototype.initPrepare = function() {
+    var _this = this;
+    var stack = this.preparationMethods.map(function (methodName) {
+      return function () {
+        return new Promise(function (resolve) {
+          return _this[methodName](resolve, {forced: true});
+        });
+      };
+    });
+    window.promisesStack(stack);
   };
 
   CognIOTA.prototype.init = function() {
-    // pass
+    // for inheritance
+  };
+
+  ////
+
+  CognIOTA.prototype.auction = function(agents, winner, packets, forced) {
+    var t1 = 80;
+    var _this = this;
+
+    var stack = [];
+
+    if (forced) {
+      winner.activate(false);
+      winner.colorize(this.shop.color);
+      return stack;
+    }
+
+    stack.push(function () {
+      return _this.writeConsole({
+        author: _this.mlCloud,
+        verb: 'broabcasts',
+        type: 'AUCTION INITIAL',
+        lines: packets.initial(),
+      });
+    });
+
+    stack.push(function () {
+      var promise;
+      agents.forEach(function (agent) {
+        var s = [];
+        s.push(function () {
+          return agent.text.receive('?');
+        });
+
+        s.push(function () {
+          agent.circle.showFill(true);
+          return agent.circle.circleIn(true).then(function () {
+            return agent.circle.showBG(true);
+          });
+        });
+
+        promise = window.promisesStack(s);
+      });
+      return promise;
+    });
+
+    stack.push(function () {
+      return window.timePromise(300);
+    });
+
+    agents.forEach(function (agent, i) {
+
+      stack.push(function () {
+        return _this.writeConsole({
+          author: agent,
+          verb: 'answers',
+          type: 'AUCTION BET',
+          lines: packets.bet(agent),
+        });
+      });
+
+      stack.push(function () {
+        agent.circle.hideBG(true);
+        agent.circle.hideFill(true);
+        agent.circle.circleOut(true);
+
+        return agent.text.send(agent.bet ? agent.bet[0] : '!');
+      });
+
+    });
+
+
+    agents.forEach(function (agent) {
+      stack.push(function () {
+        _this.writeConsole({
+          author: _this.mlCloud,
+          verb: 'calculates',
+          type: '--',
+          lines: packets.calculate(agent),
+        });
+        return window.NOOPPromise;
+      });
+
+      stack.push(function () {
+        return _this.mlCloud.colorShadow(agent.color, true);
+      });
+
+      stack.push(function () {
+        return window.timePromise(t1);
+      });
+    });
+
+    for (var i = 0; i < 4; i++) {
+      stack.push(function () {
+        return _this.mlCloud.colorShadow(_this.shop.color, true);
+      });
+
+      stack.push(function () {
+        return window.timePromise(t1);
+      });
+
+      stack.push(function () {
+        return _this.mlCloud.colorShadow(winner.color, true);
+      });
+
+      stack.push(function () {
+        return window.timePromise(t1);
+      });
+    }
+
+    stack.push(function () {
+      return _this.mlCloud.ding();
+    });
+
+    stack.push(function () {
+      _this.mlCloud.colorShadow(_this.shop.color, true);
+      return winner.colorize(_this.shop.color, false, true);
+    });
+
+    stack.push(function () {
+      winner.activate(true);
+      return winner.text.receive('!');
+    });
+
+    return stack;
   };
 
   window.CognIOTA = CognIOTA;
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   var HEX_SETTINGS = {
     radius: 30,
@@ -607,8 +918,9 @@
   function MLCloud (draw, cx, cy) {
     this.cx = cx;
     this.cy = cy;
-    // this.color = '#0060ff';
-    // this.ip = 'cogniOTA';
+
+    this.color = '#0060ff';
+    this.ip = 'cogniOTA';
 
     this.group = draw.group();
     this.group.move(this.cx, this.cy);
@@ -653,8 +965,31 @@
     return logo;
   };
 
-  MLCloud.prototype.show = function() {
-    this.group.opacity(1);
+  MLCloud.prototype.show = function(animated) {
+    if (!animated) {
+      this.group.opacity(1);
+      return window.NOOPPromise;
+    } else {
+      var t = 500;
+      // this.logo.opacity(0);
+      this.group.scale(0.01);
+      // this.group.rotate(-30);
+      this.group.opacity(1);
+
+      var _this = this;
+      this.group.animate(t, 'elastic').scale(0.8).during(function (pos, morph) {
+        // console.log(p)
+        // if (pos > 0.3) {
+          var p = SVG.easing['circIn'](pos) * 360;
+          // this.rotate(p * 360);
+        // _this.group.rotate(10);
+        _this.shadow.rotate(pos * 360);
+        _this.hex.rotate(pos * 360);
+        // }
+      });
+
+      return window.timePromise(t);
+    }
   };
 
   MLCloud.prototype.hide = function() {
@@ -691,7 +1026,20 @@
        .center(0, 0);
     shadow.scale(k2);
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  MLCloud.prototype.fallOutColor = function() {
+    var t = 0, t1 = 300, t2 = 180, t3 = 400;
+
+    this.hex.animate(t1, '>')
+             .ngon({edges: HEX_SETTINGS.edges, radius: HEX_SETTINGS.radius})
+             .attr({'stroke-width': 0})
+             .center(0, 0);
+    this.shadow.delay(t1).animate(t2).fill(this.color);
+    this.shadow.animate(t3, 'elastic').scale(1);
+
+    return window.timePromise(t);
   };
 
   MLCloud.prototype.toDefault = function () {
@@ -703,7 +1051,7 @@
     var t = 300;
     this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
 
-    return promise(t * 2);
+    return window.timePromise(t * 2);
   };
 
   MLCloud.prototype.colorShadow = function(color, animated) {
@@ -717,7 +1065,7 @@
     }
     obj.fill(color);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   MLCloud.fill = HEX_SETTINGS.fill;
@@ -726,17 +1074,9 @@
 
   window.MLCloud = MLCloud;
 
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
-
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   var HEX_SETTINGS = {
     fill: '#00d6ff',
@@ -813,7 +1153,7 @@
       }
     }
 
-    return promise(t1 * steps);
+    return window.timePromise(t1 * steps);
   };
 
   MLHost.prototype.showShadow = function() {
@@ -823,7 +1163,7 @@
                 .ngon({edges: SHADOW_SETTINGS.edges, radius: SHADOW_SETTINGS.radius})
                 .center(this.cx, this.cy);
 
-    return promise(t + d);
+    return window.timePromise(t + d);
   };
 
   MLHost.prototype.hide = function() {
@@ -852,7 +1192,7 @@
       };
       this.hex.ngon(HEX_SETTINGS).center(this.cx, this.cy).attr(HEX_SETTINGS).opacity(1);
       this.shadow.ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(this.cx, this.cy);
-      return NOOPPromise;
+      return window.NOOPPromise;
     }
   };
 
@@ -877,7 +1217,7 @@
       line.animate(t3, 'sineIn').opacity(LINE_SETTINGS.opacity);
     });
 
-    return promise(t1 + d1 + t2 + t3);
+    return window.timePromise(t1 + d1 + t2 + t3);
   };
 
   MLHost.prototype.toCenter = function(cx, cy) {
@@ -891,7 +1231,7 @@
     this.hex.animate(t2, 'backIn').center(cx, cy);
     this.shadow.animate(t2, 'backIn').center(cx, cy);
 
-    return promise(t2);
+    return window.timePromise(t2);
   };
 
   MLHost.prototype.disappear = function(cx, cy, r, e) {
@@ -905,7 +1245,7 @@
     disappear(this.hex);
     disappear(this.shadow);
 
-    return promise(t1);
+    return window.timePromise(t1);
   };
 
   MLHost.prototype.deleteLines = function() {
@@ -913,8 +1253,1008 @@
   };
 
   window.MLHost = MLHost;
-})();
-(function () {
+})(window);
+(function (window) {
+  'use strict';
+
+  var TYPE_SPEED = 50;
+
+  var VERTEXES = [
+    {idx: 1, pos: [63, 35], neightbors: [2, 6]},
+    {idx: 2, pos: [137, 17], neightbors: [3, 7]},
+    {idx: 3, pos: [245, 18], neightbors: [4, 7]},
+    {idx: 4, pos: [376, 27], neightbors: [7, 9]},
+
+    {idx: 5, pos: [44, 118], neightbors: [6, 10, 11]},
+    {idx: 6, pos: [125, 108], neightbors: [7, 11]},
+    {idx: 7, pos: [286, 86], neightbors: []},
+    {idx: 8, pos: [362, 102], neightbors: [9, 11, 12, 13]},
+    {idx: 9, pos: [471, 101], neightbors: [13]},
+
+    {idx: 10, pos: [23, 226], neightbors: [11, 14]},
+    {idx: 11, pos: [113, 178], neightbors: [15]},
+    {idx: 12, pos: [377, 195], neightbors: [16, 18]},
+    {idx: 13, pos: [464, 155], neightbors: [18]},
+
+    {idx: 14, pos: [42, 275], neightbors: [15]},
+    {idx: 15, pos: [166, 276], neightbors: [16, 19]},
+    {idx: 16, pos: [238, 259], neightbors: [17, 20, 21]},
+    {idx: 17, pos: [343, 283], neightbors: [18, 21, 22]},
+    {idx: 18, pos: [473, 275], neightbors: []},
+
+    {idx: 19, pos: [27, 346], neightbors: [20]},
+    {idx: 20, pos: [178, 342], neightbors: []},
+    {idx: 21, pos: [301, 352], neightbors: [22]},
+    {idx: 22, pos: [457, 332], neightbors: []},
+  ];
+
+  var GRAPH_SETTINGS = {
+    'r': 3,
+    'stroke-width': 6,
+    'stroke': '#79909b',
+  };
+
+  var IMG_SRC = {
+    bg: 'dist/env.png',
+    whouse: 'dist/storage.png',
+    shop: 'dist/shopping.png',
+    carEmpty: 'dist/carEmpty.png',
+    carFull: 'dist/car.png',
+  };
+
+  var WHOUSES = [
+    {idx: 4, color: '#03a9f4', params: {bet: ['20', 'yesterday']}},
+    {idx: 14, color: '#9e4f24', params: {bet: ['25', 'today']}},
+    {idx: 21, color: '#00838f', params: {bet: ['15', 'today']}},
+  ];
+
+  var SHOPS = [
+    {idx: 1, color: '#9575cd'},
+    {idx: 12, color: '#5d4037'},
+    {idx: 20, color: '#827717'},
+    {idx: 22, color: '#3f51b5'},
+    {idx: 11, color: '#e040fb'},
+  ];
+
+  var CARS = [
+    {idx: 7, color: '#b71c1c'},
+    {idx: 9, color: '#ff6f00'},
+    {idx: 19, color: '#ff4081'},
+  ];
+
+  var AGENT_IMG_SETTINGS = {
+    w: 35,
+    h: 35,
+  };
+
+  var AGENT_CIRCLE_SETTINGS = {
+    r: AGENT_IMG_SETTINGS.w * 1.4 / 2,
+    border: 1,
+
+    bg: {
+      fill: '#edecda',
+    },
+
+    'fill-opacity': 0.4,
+  };
+
+
+  var DELIVERY_PATH = {
+    toWarehouse: [15, 16, 21],
+    toShop: [16, 15, 11, 6, 1],
+    toEnd: [2],
+  };
+
+  AGENT_CIRCLE_SETTINGS.bg.r = AGENT_CIRCLE_SETTINGS.r;
+
+  var AGENT_LINE_SETTINGS = {
+    'stroke-width': 2,
+    'stroke-opacity': 0.6,
+  };
+
+  var AGENT_TEXT_SETTINGS = {
+    r: 11,
+    'stroke-width': 2,
+    'fill-opacity': 0.3,
+    bg: {
+      fill: '#63749b',
+      'fill-opacity': 0.9,
+    },
+  };
+  AGENT_TEXT_SETTINGS.fz = AGENT_TEXT_SETTINGS.r * 1.2;
+
+  var AGENT_BRACKETS_SETTINGS = {
+    'font-family': 'Rajdhani',
+    // 'font-weight': '400',
+    'font-size': '52px',
+    'fill': '#0060ff',
+    'stroke': '#0060ff',
+    'stroke-width': '1px',
+    'width': 40,
+  };
+
+  var HEADER_ACCENT_CLASS = 'secondPage-slideshow-item__header--accent';
+
+  function generateIP() {
+    var text = '';
+    var possible = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "9", "9", "9", "9", "9", "9", "9", "9"];
+
+    for (var i = 0; i < 5; i++) {
+      text += Random.choice(possible);
+    }
+
+    return text;
+  }
+
+  function ProtocolCognIOTA (params, headerElement, consoleElement) {
+    this.headerElement = headerElement;
+    this.headerText = headerElement.getAttribute('header');
+    this.consoleElement = consoleElement;
+
+    params.vertexes = {
+      array: VERTEXES,
+      params: GRAPH_SETTINGS,
+    };
+    params.mlx = 500 / 2;
+    params.mly = 385 / 2;
+
+    CognIOTA.call(this, params);
+  }
+
+  // inherit ProtocolCognIOTA
+  ProtocolCognIOTA.prototype = Object.create(CognIOTA.prototype);
+
+  // correct the constructor pointer because it points to ProtocolCognIOTA
+  ProtocolCognIOTA.prototype.constructor = ProtocolCognIOTA;
+
+  ////////////
+
+  ProtocolCognIOTA.prototype.init = function() {
+    this.bg = this._addBG();
+    this.whouses = this._createElements(WHOUSES, IMG_SRC.whouse);
+    this.shops = this._createElements(SHOPS, IMG_SRC.shop);
+    this.cars = this._createElements(CARS, IMG_SRC.carEmpty);
+
+    this.agents = this.whouses.concat(this.shops).concat(this.cars);
+
+    this.shop = this.shops[0];
+    this.provider = this.whouses[this.whouses.length - 1];
+    this.delivery = this.cars[this.cars.length - 1];
+
+    this.shopBid = {
+      price: '23',
+      day: 'today',
+    }
+  };
+
+  ProtocolCognIOTA.prototype._addBG = function() {
+    var bg = this.draw.image(IMG_SRC.bg, 500, 420);
+    bg.backward();
+
+
+    var blurFilter, gridFilter;
+    bg.filter(function(add) {
+      blurFilter = add.gaussianBlur(0);
+    });
+    this.graph.group.filter(function (add) {
+      gridFilter = add.gaussianBlur(0);
+    });
+
+    var _this = this;
+
+    bg.blur = function (blurValue) {
+      var t = 200;
+
+      blurFilter.animate(t, '<').attr('stdDeviation', blurValue);
+      gridFilter.animate(t, '<').attr('stdDeviation', blurValue);
+
+      return window.timePromise(t);
+    };
+    bg.unblur = function () {
+      var t = 200;
+
+      blurFilter.animate(t, '>').attr('stdDeviation', '0 0');
+      gridFilter.animate(t, '>').attr('stdDeviation', '0 0');
+
+      return window.timePromise(t);
+    };
+
+    return bg;
+  };
+
+  ProtocolCognIOTA.prototype._createElements = function(settings, imgSrc) {
+    var _this = this;
+    var group = this.draw.group();
+    this.mlCloud.group.forward();
+
+    var img_settings = Object.assign({}, AGENT_IMG_SETTINGS);
+    img_settings.src = imgSrc;
+
+    var elements = settings.map(function (s) {
+      var vertex = _this.graph.vertexes[s.idx];
+      var agent = new Agent(group, {
+        circle: AGENT_CIRCLE_SETTINGS,
+        line: AGENT_LINE_SETTINGS,
+        text: AGENT_TEXT_SETTINGS,
+        img: img_settings,
+        brackets: AGENT_BRACKETS_SETTINGS,
+
+        color: s.color,
+        cx: vertex.pos[0],
+        cy: vertex.pos[1],
+        mlx: _this.mlx,
+        mly: _this.mly,
+        mlw: 60,
+      });
+
+      agent.ip = generateIP(8) + '...';
+      
+      s.params = s.params || {};
+      for (var name in s.params) {
+        agent[name] = s.params[name];
+      }
+
+      agent.hide();
+
+      return agent;
+    });
+
+    elements.blur = function (blurValue, animateBrackets) {
+      var a;
+      elements.forEach(function (agent) {
+        a = agent.blur(blurValue, animateBrackets);
+      });
+      return a;
+    };
+
+    elements.unblur = function (animated) {
+      var a;
+      elements.forEach(function (agent) {
+        a = agent.unblur(animated);
+      });
+      return a;
+    };
+
+    return elements;
+  };
+  //////
+  ProtocolCognIOTA.prototype._writeHeader = function(text) {
+    text = text || '';
+    var _this = this;
+    var badIdx = -1;
+    var stack = (text + ' ').split('').reduce(function (bucket, l, i) {
+      if (l == '<') {
+        badIdx = text.indexOf('>', i);
+      }
+
+      if (i > badIdx) {
+        bucket.push(function () {
+          _this.headerElement.innerHTML = text.slice(0, i);
+          return window.timePromise(TYPE_SPEED);
+        });
+      }
+      return bucket;
+    }, []);
+    return window.promisesStack(stack);
+  };
+
+  ProtocolCognIOTA.prototype.writeHeader = function(forced) {
+    if (forced) {
+      this.headerElement.innerHTML = this.headerText;
+      return window.NOOPPromise;
+    }
+    return this._writeHeader(this.headerText);
+  };
+
+  ProtocolCognIOTA.prototype.writeConsole = function(params) {
+    var title = '<span style="color: ' +  params.author.color + '">' +
+                   params.author.ip + '</span> ' +
+                params.verb + ':'
+    this.consoleElement.querySelector('[console-author]').innerHTML = title;
+
+    var body = '';
+
+    params.lines = params.lines || {};
+    var maxL = Object.keys(params.lines).reduce(function (a, b) {
+      return a.length > b.length ? a : b;
+    }, '').length;
+
+    if (params.type) {
+      var name = 'TYPE';
+      maxL = maxL || name.length;
+      var d = '&nbsp;'.repeat(maxL - name.length);
+      body += '<p>' + name + ' ' + d + ': <strong>' + params.type + '</strong></p>';
+    }
+
+    for (var name in params.lines) {
+      var d = '&nbsp;'.repeat(maxL - name.length);
+      body += '<p>' + name + ' ' + d + ': ' + params.lines[name] + '<p>';
+    }
+    this.consoleElement.querySelector('[console-body]').innerHTML = body;
+
+    return window.NOOPPromise;
+  };
+
+  ProtocolCognIOTA.prototype.clearConsole = function() {
+    this.consoleElement.querySelector('[console-author]').innerHTML = '';
+    this.consoleElement.querySelector('[console-body]').innerHTML = '';
+  }
+  //////
+
+
+  ProtocolCognIOTA.prototype.showDescription = function(end, params) {
+    params = params || {};
+
+    if (params.clear) {
+      return end();
+    }
+
+    else if (params.forced) {
+      classie.add(this.headerElement, HEADER_ACCENT_CLASS);
+      this.writeHeader(true);
+      return end();
+    }
+
+    else {
+      classie.add(this.headerElement, HEADER_ACCENT_CLASS);
+
+      var t1 = 100, t2 = 300, t3 = 1000;
+      var _this = this;
+      var blurValue = '3 3';
+
+      var stack = [];
+
+      stack.push(function () {
+        _this.bg.blur(blurValue);
+        _this.shops.blur(blurValue);
+        _this.whouses.blur(blurValue);
+        return _this.cars.blur(blurValue);
+      });
+
+      [
+        {title: 'Automatic Shops', elements: _this.shops},
+        {title: 'Automatic Wirehouses', elements: _this.whouses},
+        {title: 'Self-Driving Cars', elements: _this.cars},
+      ].forEach(function (params) {
+        var title = params.title;
+        var elements = params.elements;
+
+        stack.push(function () {
+          return window.timePromise(t1);
+        });
+
+        stack.push(function () {
+          return _this._writeHeader(title);
+        });
+
+        stack.push(function () {
+          return window.timePromise(t2);
+        });
+
+        stack.push(function () {
+          return elements.unblur(true);
+        });
+
+        stack.push(function () {
+          return window.timePromise(t3);
+        });
+
+        stack.push(function () {
+          return elements.blur(blurValue, true);
+        });
+      });
+
+      stack.push(function () {
+        return _this._writeHeader();
+        classie.remove(_this.headerElement, HEADER_ACCENT_CLASS);
+
+        _this.bg.unblur();
+        _this.shops.unblur();
+        _this.whouses.unblur();
+        return _this.cars.unblur();
+      });
+
+
+      stack.push(function () {
+        return window.NOOPPromise.then(end);
+      });
+
+      return window.promisesStack(stack);
+    }
+  };
+
+  ProtocolCognIOTA.prototype.showML = function(end, params) {
+    params = params || {};
+
+    if (params.clear) {
+      this.mlCloud.hide();
+      this.agents.forEach(function (agent) {
+        agent.line.hide();
+      });
+      return end();
+    }
+
+    var _this = this;
+    var animated = !params.forced;
+    var stack = [];
+
+    stack.push(function () {
+      return _this.mlCloud.show(animated);
+    });
+
+    stack.push(function () {
+      var promise;
+      _this.agents.forEach(function (agent) {
+        promise = agent.line.show(animated);
+      });
+      return promise;
+    });
+
+    if (params.forced) {
+      classie.remove(this.headerElement, HEADER_ACCENT_CLASS);
+      this._writeHeader('');
+    }
+
+    else {
+      stack.push(function () {
+        return window.timePromise(500);
+      });
+    }
+
+
+    stack.push(function () {
+      return window.NOOPPromise.then(end);
+    });
+    return window.promisesStack(stack);
+
+  };
+
+  ProtocolCognIOTA.prototype.initialRequest = function(end, params) {
+    params = params || {};
+
+    if (params.clear) {
+      this._writeHeader('');
+      this.shop.deactivate(false);
+      this.shop.circle.circleOut(false);
+      this.shop.circle.hideBG(false);
+      this.mlCloud.toDefault();
+      this.clearConsole();
+      return end();
+    }
+
+    var stack = [];
+    var _this = this;
+    var animated = !params.forced;
+
+    if (params.forced) {
+      this.shop.activate(false);
+      this.shop.circle.circleIn(false);
+      // this.shop.circle.showBG(false);
+    }
+
+    else {
+      stack.push(function () {
+        return _this.writeHeader();
+      });
+
+      stack.push(function () {
+        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        return _this.writeConsole({
+          author: _this.shop,
+          verb: 'requests',
+          type: 'INITIAL',
+          lines: {
+            PRODUCT: 'milk',
+            SPEED: 'medium',
+            MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
+            RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+          },
+        });
+      });
+
+      stack.push(function () {
+        return _this.shop.sendRequest();
+        // .then(function () {
+        //   return _this.shop.circle.showBG(true);
+        // });
+      });
+    }
+
+    stack.push(function () {
+      return _this.mlCloud.fallInColor(_this.shop.color, animated);
+    });
+
+    stack.push(function () {
+      return window.NOOPPromise.then(end);
+    });
+    return window.promisesStack(stack);
+
+  };
+
+  ProtocolCognIOTA.prototype.providersAuction = function(end, params) {
+    params = params || {};
+    if (params.clear) {
+      this._writeHeader('');
+      this.clearConsole();
+      this.provider.colorize(this.provider.color);
+      this.provider.deactivate();
+      return end();
+    }
+
+
+    var _this = this;
+    var stack = [];
+
+    if (!params.forced) {
+      stack.push(function () {
+        return _this.writeHeader();
+      });
+      stack.push(function () {
+        return _this.mlCloud.ding();
+      });
+    }
+
+
+    var auctionPackets = {
+      initial: function (agent) {
+        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        return {
+          PRODUCT: 'milk',
+          MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
+          RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+
+        };
+      },
+      bet: function (agent) {
+        var spanColor = '<span style="color:' + agent.color + '">';
+        return {
+          PRODUCT: 'milk',
+          PRICE: spanColor + agent.bet[0] + '</span>',
+          RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
+        };
+      },
+      calculate: function (agent) {
+        var agentSpanColor = '<span style="color:' + agent.color + '">';
+        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        return {
+          PRICE: agentSpanColor + agent.bet[0] + '</span>' +
+                '(requered is ' + spanColor +  _this.shopBid.price + '</span>)',
+          RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
+                '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
+        };
+      }
+    };
+
+    var auctionStack = this.auction(this.whouses, this.provider, auctionPackets, params.forced)
+    stack = stack.concat(auctionStack);
+
+    stack.push(function () {
+      return window.NOOPPromise.then(end);
+    });
+    return window.promisesStack(stack);
+  };
+
+  ProtocolCognIOTA.prototype.deliveryAuction = function(end, params) {
+    params = params || {};
+
+    if (params.clear) {
+      this._writeHeader('');
+      this.clearConsole();
+      this.delivery.colorize(this.provider.color);
+      this.delivery.deactivate();
+      return end();
+    }
+
+    var stack = [];
+
+
+    if (!params.forced) {
+      var _this = this;
+      stack.push(function () {
+        return _this.writeHeader();
+      });
+    }
+
+    var auctionPackets = {
+      initial: function (agent) {
+        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        return {
+          PRODUCT: 'milk',
+          MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
+          RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+
+        };
+      },
+      bet: function (agent) {
+        var spanColor = '<span style="color:' + agent.color + '">';
+        return {
+          PRODUCT: 'milk',
+          // PRICE: spanColor + agent.bet[0] + '</span>',
+          // RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
+        };
+      },
+      calculate: function (agent) {
+        var agentSpanColor = '<span style="color:' + agent.color + '">';
+        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        return {
+          // PRICE: agentSpanColor + agent.bet[0] + '</span>' +
+          //       '(requered is ' + spanColor +  _this.shopBid.price + '</span>)',
+          // RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
+          //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
+        };
+      }
+    };
+
+    var auctionStack = this.auction(this.cars, this.delivery, auctionPackets, params.forced)
+    stack = stack.concat(auctionStack);
+
+    stack.push(function () {
+      return window.NOOPPromise.then(end);
+    });
+    return window.promisesStack(stack);
+  };
+
+  ProtocolCognIOTA.prototype.deliveryProcess = function(end, params) {
+    params = params || {};
+    var _this = this;
+
+    function toVertex(idx, animated) {
+      var vertex = _this.graph.vertexes[idx];
+      var cx = vertex.pos[0], cy = vertex.pos[1];
+      return _this.delivery.go(cx, cy, animated);
+    }
+
+    if (params.clear) {
+      this._writeHeader('');
+      this.clearConsole();
+      this.delivery.img.update(IMG_SRC.carEmpty);
+      this.delivery.go(this.delivery.cx, this.delivery.cy, false);
+      return end();
+    }
+
+    else if (params.forced) {
+      this.delivery.img.update(IMG_SRC.carEmpty);
+      var lastIdx = DELIVERY_PATH.toEnd[DELIVERY_PATH.toEnd.length - 1];
+      toVertex(lastIdx, false);
+      return end();
+    }
+
+    else {
+      var stack = [];
+
+      stack.push(function () {
+        return _this.writeHeader();
+      });
+
+
+      DELIVERY_PATH.toWarehouse.forEach(function (idx) {
+        stack.push(function () {
+          return toVertex(idx, true);
+        });
+      });
+
+      stack.push(function () {
+        _this.delivery.img.update(IMG_SRC.carFull);
+        return window.timePromise(100);
+      });
+
+      stack.push(function () {
+        return _this.mlCloud.ding();
+      });
+
+      DELIVERY_PATH.toShop.forEach(function (idx) {
+        stack.push(function () {
+          return toVertex(idx, true);
+        });
+      });
+
+      stack.push(function () {
+        _this.delivery.img.update(IMG_SRC.carEmpty);
+        return window.timePromise(100);
+      });
+
+      stack.push(function () {
+        return _this.mlCloud.ding();
+      });
+
+      DELIVERY_PATH.toEnd.forEach(function (idx) {
+        stack.push(function () {
+          return toVertex(idx, true);
+        });
+      });
+
+      stack.push(function () {
+        return window.NOOPPromise.then(end);
+      });
+      return window.promisesStack(stack);
+    }
+  };
+
+  ProtocolCognIOTA.prototype.paymentProcess = function(end, params) {
+    params = params || {};
+    if (params.clear) {
+      this._writeHeader('');
+      this.clearConsole();
+      this.mlCloud.fallInColor(this.shop.color, false);
+      this.provider.activate(false);
+      this.provider.colorize(this.shop.color);
+      this.shop.activate(false);
+      this.delivery.activate(false);
+      this.delivery.colorize(this.shop.color);
+      return end();
+    }
+
+    else if (params.forced) {
+      return end();
+    }
+
+    else {
+      var stack = [];
+      var _this = this;
+      stack.push(function () {
+        return _this.writeHeader();
+      });
+
+      stack.push(function () {
+        return _this.shop.sendRequest('$');
+      });
+
+      stack.push(function () {
+        _this.shop.deactivate(true);
+        return _this.mlCloud.ding();
+      });
+
+      stack.push(function () {
+        _this.provider.text.receive('$');
+        return _this.delivery.text.receive('$', _this.delivery.img.cx, _this.delivery.img.cy);
+      });
+
+      stack.push(function () {
+        _this.provider.deactivate(true);
+        _this.delivery.deactivate(true);
+        return _this.mlCloud.fallOutColor();
+      });
+
+      stack.push(function () {
+        return window.NOOPPromise.then(end);
+      });
+      return window.promisesStack(stack);
+    }
+  };
+
+  window.ProtocolCognIOTA = ProtocolCognIOTA;
+})(window);
+(function (window) {
+  'use strict';
+
+  var slideOptions = {
+    paths : {
+      rect : 'M33,0h41c0,0,0,9.871,0,29.871C74,49.871,74,60,74,60H32.666h-0.125H6c0,0,0-10,0-30S6,0,6,0H33',
+      right : 'M33,0h41c0,0,5,9.871,5,29.871C79,49.871,74,60,74,60H32.666h-0.125H6c0,0,5-10,5-30S6,0,6,0H33', 
+      left : 'M33,0h41c0,0-5,9.871-5,29.871C69,49.871,74,60,74,60H32.666h-0.125H6c0,0-5-10-5-30S6,0,6,0H33'
+    },
+    speed : 500,
+    w: 68,
+    h: 60,
+    fill: 'rgb(237, 236, 218)',
+    minW: 530,
+    maxW: 900,
+  };
+  slideOptions.minSx = slideOptions.minW / slideOptions.w;
+
+
+  function ProtocolSlideshow(parent, nav) {
+    this.parent = parent;
+    this.nav = nav;
+    this.isAnimating = false;
+
+    this._init();
+    // this._initBtns();
+
+    this.currentN = -1;
+    // this.currentN = 0;
+    // this.currentN = 1;
+    // this.currentN = 2;
+    // this.currentN = 3;
+    // this.currentN = 4;
+    // this.currentN = 5;
+    this.goNext();
+  }
+
+  ProtocolSlideshow.prototype._init = function() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var elements = this.parent.querySelectorAll('li');
+    var count = elements.length;
+    this.step = 100 / count;
+
+    this.parent.style.width = W * count + 'px';
+    this.parent.style.height = H + 'px';
+
+    var _this = this;
+    this.items = [];
+    this.methods = [];
+    elements.forEach(function (elem, i) {
+      elem.style.width = W + 'px';
+      elem.style.height = H + 'px';
+
+      var method = elem.getAttribute('method');
+      var slide = _this.createSlide(elem, i, method);
+      _this.items.push(slide);
+      _this.methods.push(method);
+    });
+  };
+
+  // ProtocolSlideshow.prototype._initBtns = function() {
+  //   // body...
+  // };
+
+  ProtocolSlideshow.prototype.createBG = function(elem, i) {
+    var W = Math.min(elem.offsetWidth, slideOptions.maxW), H = elem.offsetHeight;
+    var sx = Math.max(W / slideOptions.w * 0.8, slideOptions.minSx),
+        sy = H / slideOptions.h;
+
+    var containerW = Math.max(slideOptions.w * sx, slideOptions.minW),
+                     containerH = H;
+    var cx = containerW / 2, cy = containerH / 2;
+
+    var container = elem.querySelector('[container]');
+    container.style.width = containerW + 'px';
+    container.style.height = containerH + 'px';
+
+    var svgParent = elem.querySelector('[bg-parent]');
+    var svgId = 'secondPageSVGBG' + i;
+    svgParent.setAttribute('id', svgId);
+    var draw = SVG(svgId);
+    var path = draw.path(slideOptions.paths.rect)
+                   .fill(slideOptions.fill)
+                   .center(cx, cy)
+                   .scale(sx, sy);
+
+    // draw.text(i + '').font({size: 30}).center(cx, cy).opacity(0.5)
+
+    return {
+      plot: function (d, s, e) {
+        path.stop();
+
+        var obj = path;
+        if (s) {
+          obj = obj.animate(s, e);
+        }
+        obj.plot(slideOptions.paths[d]);
+        obj.center(cx, cy);
+
+        return s ? window.timePromise(s) : window.NOOPPromise;
+      }
+    };
+  };
+
+  ProtocolSlideshow.prototype.createAnimation = function(elem, i, method) {
+    var svgParent = elem.querySelector('[svg-parent]');
+    var svgId = 'secondPageSVG' + i;
+    svgParent.setAttribute('id', svgId);
+
+    var headerElement = elem.querySelector('[header]');
+    var consoleElement = elem.querySelector('[console]');
+
+    var protocol = new ProtocolCognIOTA({
+      root: SVG(svgId),
+      method: method,
+      preparationMethods : this.methods.slice(),
+    }, headerElement, consoleElement);
+
+    return protocol;
+  };
+
+  ProtocolSlideshow.prototype.createSlide = function(slide, i, method) {
+    var bg = this.createBG(slide, i);
+    var cogniota = this.createAnimation(slide, i, method);
+
+    return {
+      play: function () {
+        return new Promise(function (resolve) {
+          return cogniota.play(resolve);
+        });
+      },
+      out: function (dir, speed) {
+        return new Promise(function (resolve) {
+          return bg.plot(dir, speed, '>').then(function () {
+            return cogniota.out(resolve);
+          });
+        });
+      },
+      in: function (dir, speed) {
+        return new Promise(function (resolve) {
+          return bg.plot(dir).then(function () {
+            return bg.plot('rect', speed, 'elastic').then(resolve);
+          });
+        });
+      },
+    }
+  };
+
+  ProtocolSlideshow.prototype.goNext = function() {
+    var nextN = this.currentN + 1;
+    if (nextN > (this.items.length - 1)) {
+      nextN = 0;
+      return;
+    }
+
+    this._morph(nextN);
+  };
+
+  ProtocolSlideshow.prototype.goPrev = function() {
+    var nextN = this.currentN - 1;
+    if (nextN < 0) {
+      nextN = this.count - 1;
+    }
+    this._morph(nextN);
+  };
+
+  ProtocolSlideshow.prototype._translate = function(nextN) {
+    this.currentN = nextN;
+    var translateVal = -1 * this.currentN * this.step;
+    this.parent.style.WebkitTransform = 'translate3d(' + translateVal + '%,0,0)';
+    this.parent.style.transform = 'translate3d(' + translateVal + '%,0,0)';
+
+    return window.timePromise(500);
+  };
+
+
+  ProtocolSlideshow.prototype._morph = function(nextN) {
+    if (this.isAnimating) return;
+
+    this.isAnimating = true;
+    var _this = this;
+
+    var dir = nextN < this.currentN ? 'right' : 'left';
+    var speed = slideOptions.speed,
+        outSpeed = speed * 0.5,
+        inSpeed = speed * 0.3;
+
+    var nextItem = this.items[ nextN ];
+    var currItem = this.items[ this.currentN ];
+
+    var stack = [];
+    // currItem == undefined if the first play
+    if (currItem) {
+      stack.push(function () {
+        // morph svg path on exiting slide to "curved"
+        return currItem.out(dir, outSpeed);
+      });
+
+      stack.push(function () {
+        // move the parent to entering slide
+        return _this._translate(nextN)
+      });
+
+      stack.push(function () {
+        // change svg path on entering slide to "curved"
+        // morph svg path on entering slide to "rectangle"
+        nextItem.in(dir, speed);
+        return NOOPPromise;
+      });
+    } else {
+      stack.push(function () {
+        // move the parent to entering slide
+        return _this._translate(nextN)
+      });
+    }
+
+    stack.push(function () {
+      return nextItem.play();
+    });
+
+
+    window.promisesStack(stack).then(function () {
+      _this.isAnimating = false;
+      _this.goNext();
+    });
+
+  };
+
+  window.ProtocolSlideshow = ProtocolSlideshow;
+})(window);
+(function (window) {
   'use strict';
 
   window.Random = {
@@ -947,11 +2287,9 @@
     }
   };
 
-})();
-(function () {
-  // 'use strict';
-
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
+})(window);
+(function (window) {
+  'use strict';
 
   var VERTEXES = [
     {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
@@ -1044,8 +2382,12 @@
 
 
   TangleCognIOTA.prototype.init = function() {
-    this._createShops();
+    this.agents = this._createShops();
     this._createMLNodes();
+
+    this.shop = this.agents[0];
+    this.providers = [1, 2, 4].map(function (i) {return _this.agents[i];});
+    this.provider = _this.providers[this.providers.length - 1];
   };
   //////
 
@@ -1054,7 +2396,7 @@
     var group = this.draw.group();
     this.mlCloud.group.forward();
 
-    this.agents = AGENTS_IDXS.map(function (idx, i) {
+    return AGENTS_IDXS.map(function (idx, i) {
       var vertex = _this.graph.vertexes[idx];
       var agent = new Agent(group, {
         circle: AGENT_CIRCLE_SETTINGS,
@@ -1183,7 +2525,8 @@
       this.agents.forEach(function (agent) {
         agent.hide();
       });
-      return this.shop.deactivate();
+      this.shop.deactivate();
+      return end();
     }
 
     var promise, animated = !params.forced;
@@ -1192,10 +2535,6 @@
     });
 
     return promise.then(function () {
-      _this.shop = _this.agents[0];
-      _this.providers = [1, 2, 4].map(function (i) {return _this.agents[i];});
-      _this.provider = _this.providers[_this.providers.length - 1];
-
       if (params.forced) {
         return _this.shop.activate(false).then(end);
       }
@@ -1227,81 +2566,91 @@
 
   TangleCognIOTA.prototype.mlAuction = function(end, params) {
     params = params || {};
+
     if (params.clear) {
       this.provider.deactivate(false);
-      return this.mlCloud.colorShadow(this.shop.color, false);
+      this.mlCloud.colorShadow(this.shop.color, false);
+      return end();
     }
 
-    var _this = this;
-    // var agents = [this.agents[1], this.agents[2], this.agents[4]];
-    // this.provider = agents[2];
-
-    if (params.forced) {
-      _this.provider.activate(false);
-      _this.mlCloud.colorShadow(_this.provider.color, false);
+    else if (params.forced) {
+      this.provider.activate(false);
+      this.mlCloud.colorShadow(this.provider.color, false);
       return end();
-    } else {
-      var t1 = 200, t2 = 100;
+    }
 
-      function promisesStack(i, promise) {
-        var agent = _this.providers[i];
-        if (!agent) return end();
+    else {
+      var stack = [];
+      var _this = this;
 
-        return new Promise(function (resolve) {
+      this.providers.forEach(function (agent) {
+        stack.push(function () {
           agent.activate(true, false);
-          return _this.mlCloud.colorShadow(agent.color, true).then(function () {
-            setTimeout(function () {
-              if (agent.idx == _this.provider.idx) {
-                _this.mlCloud.ding().then(resolve);
-              } else {
-                return agent.deactivate(true, false).then(function () {
-                  return setTimeout(resolve, t2);
-                });
-              }
-            }, t1);
-          });
-        }).then(function () {
-          promisesStack(i + 1);
+          return _this.mlCloud.colorShadow(agent.color, true);
         });
-      }
 
-      return promisesStack(0, NOOPPromise);
+        stack.push(function () {
+          return window.timePromise(t1);
+        });
+
+        if (agent.idx == _this.provider.idx) {
+          stack.push(function () {
+            return _this.mlCloud.ding();
+          });
+        } else {
+          stack.push(function () {
+            return agent.deactivate(true, false);
+          });
+
+          stack.push(function () {
+            return window.timePromise(t2);
+          });
+        }
+      });
+
+      stack.push(function () {
+        return window.NOOPPromise.then(end);
+      });
+
+      return window.promisesStack(stack);
     }
 
   };
 
   TangleCognIOTA.prototype.mlChooseProvider = function(end, params) {
     params = params || {};
+
     if (params.clear) {
       this.mlCloud.colorShadow(this.provider.color, false);
       return this.provider.colorize(this.provider.color, false, false);
     }
-    if (params.forced) {
-      return;
+
+    else if (params.forced) {
+      return end();
     }
-    var _this = this;
 
-    this.mlCloud.colorShadow(this.shop.color, true);
-    this.mlCloud.ding();
-    this.provider.colorize(this.shop.color);
+    else {
+      var _this = this;
 
-    return this.provider.receiveRequest().then(function () {
-      return _this.provider.sendResponse().then(function () {
-        _this.shop.receiveResponse().then(end);
+      this.mlCloud.colorShadow(this.shop.color, true);
+      this.mlCloud.ding();
+      this.provider.colorize(this.shop.color);
+
+      return this.provider.receiveRequest().then(function () {
+        return _this.provider.sendResponse().then(function () {
+          _this.shop.receiveResponse().then(end);
+        });
       });
-    });
+    }
   };
 
 
   TangleCognIOTA.GRAPH_SETTINGS = GRAPH_SETTINGS;
 
   window.TangleCognIOTA = TangleCognIOTA;
-})();
-(function () {
+})(window);
+(function (window) {
   'use strict';
-
-  var NOOP = Function.prototype;
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
   var SLIDESHOW_CLASSES = {
     description: 'firstPage-main-slideshow-item--description'
@@ -1315,7 +2664,6 @@
 
     this.descriptionTime = 2000;
 
-    var _this = this;
     this.items = [];
     this.methods = [];
     var slides = this.parent.querySelectorAll('li');
@@ -1323,13 +2671,13 @@
     var count = slides.length;
     this.parent.style.width = 100 * count + '%';
     this.step = 100 / count;
+    var _this = this;
     slides.forEach(function (elem, i) {
       // if (i > N) return
       var method = elem.getAttribute('method');
-      var item =  _this.createSlide(elem, i, method);
+      var item = _this.createSlide(elem, i, method);
       _this.items.push(item);
       _this.methods.push(method);
-
     });
 
     this.currentN = -1;
@@ -1428,12 +2776,9 @@
     });
   };
 
-  TangleSlideshow.prototype.goPrev = NOOP;
-
-
 
   window.TangleSlideshow = TangleSlideshow;
-})();
+})(window);
 /*!
  * classie v1.0.1
  * class helper functions
@@ -1519,7 +2864,7 @@ if ( typeof define === 'function' && define.amd ) {
 }
 
 })( window );
-(function () {
+(function (window) {
   'use strict';
 
   function Graph(draw, vertexes, params) {
@@ -1558,4 +2903,31 @@ if ( typeof define === 'function' && define.amd ) {
 
 
   window.Graph = Graph;
-})();
+})(window);
+(function (window) {
+  'use strict';
+
+  window.NOOP = Function.prototype;
+  window.NOOPPromise = new Promise(function (resolve) {resolve()});
+  window.timePromise = function (t) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, t);
+    });
+  };
+  window.promisesStack = function (stack) {
+    return new Promise(function (end) {
+      function process(i) {
+        var p = stack[i];
+        if (!p) return end();
+
+        return new Promise(function (resolve) {
+          return p().then(resolve);
+        }).then(function () {
+          process(i + 1);
+        });
+      }
+
+      return process(0);
+    });
+  };
+})(window);

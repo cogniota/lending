@@ -1,75 +1,46 @@
 <div class="firstPage-main">
   <ul class="firstPage-main-slideshow">
-    <li class="firstPage-main-slideshow-item" method="createTangle">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          It is
-          <strong>IOTA tangle</strong>.
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "createTangle",
+      "description":
+        "It is <strong>IOTA tangle</strong>"
+    })
 
-    <li class="firstPage-main-slideshow-item" method="createMLNodes">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          Any IOTA node can be turned into a
-          <strong>machine learning node</strong>.
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "createMLNodes",
+      "description":
+        "Any IOTA node can be turned into a <strong>machine learning node</strong>"
+    })
 
-    <li class="firstPage-main-slideshow-item" method="createMLCloud">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          Machine Learning nodes create
-          <strong>CognIOTA cluster.</strong>
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "createMLCloud",
+      "description":
+        "Machine Learning nodes create <strong>CognIOTA cluster.</strong>"
+    })
 
-    <li class="firstPage-main-slideshow-item" method="shopRequests">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          IOTA nodes <strong>request</strong>
-          machine learning <strong>services</strong>
-          from CognIOTA.
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "shopRequests",
+      "description":
+        "IOTA nodes <strong>request</strong> machine learning <strong>services</strong> from CognIOTA."
+    })
 
-    <li class="firstPage-main-slideshow-item" method="mlSendsResponse">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          CognIOTA <strong>finds the solution</strong>
-          for the request.
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "mlSendsResponse",
+      "description":
+        "CognIOTA <strong>finds the solution</strong> for the request."
+    })
 
-    <li class="firstPage-main-slideshow-item" method="mlAuction">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          It uses <strong>auctions</strong>
-          for finding the best task executer.
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "mlAuction",
+      "description":
+        "It uses <strong>auctions</strong> for finding the best task executer."
+    })
 
-    <li class="firstPage-main-slideshow-item" method="mlChooseProvider">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          CognIOTA powers <br>
-          <strong>the economy of IoT</strong>.
-        </div>
-      </div>
-    </li>
+    @@include('./main-slideshow-slide.html', {
+      "method": "mlChooseProvider",
+      "description":
+        "CognIOTA powers <br> <strong>the economy of IoT</strong>."
+    })
   </ul>
 </div>
 

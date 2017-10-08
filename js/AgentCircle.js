@@ -1,15 +1,7 @@
-(function () {
+(function (window) {
   'use strict';
 
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
-
   var SPIN_TIME = 250;
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   function AgentCircle(draw, params) {
     this.cx = params.cx;
@@ -28,14 +20,14 @@
 
     this.group = draw.group().move(this.cx, this.cy);
 
-    this.bg = this.draw(this.SETTINGS.bg);
+    this.bg = this.draw(this.SETTINGS.bg).attr('t', 'bg');
 
     this.fill = this.draw({
       stroke: this.color,
       'stroke-width': this.SETTINGS.r * 2,
       opacity: this.SETTINGS['fill-opacity'],
       r: 0.1,
-    });
+    }).attr('t', 'fill');
 
     this.border = this.draw({
       'stroke-width': this.SETTINGS.border,
@@ -44,7 +36,7 @@
       r: this.SETTINGS.r,
       fill: 'transparent',
       stroke: this.color
-    });
+    }).attr('t', 'border');
     this.border.rotate(-90);
   }
 
@@ -98,14 +90,16 @@
     }
     obj.attr(settings);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentCircle.prototype.deactivateBorder = function(animated) {
+    this.circleOut(false);
     return this._activateBorder(animated, this.BORDER_SETTINGS);
   };
 
   AgentCircle.prototype.activateBorder = function(animated) {
+    this.circleIn(false);
     return this._activateBorder(animated, this.BORDER_ACTIVE_SETTINGS);
   };
 
@@ -118,7 +112,19 @@
     }
     obj.opacity(this.SETTINGS['fill-opacity']);
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  AgentCircle.prototype.showBG = function(animated) {
+    var t = 0, t1 = 300;
+    var obj = this.bg;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.opacity(1);
+
+    return window.timePromise(t);
   };
 
   AgentCircle.prototype.hideFill = function(animated) {
@@ -130,7 +136,19 @@
     }
     obj.opacity(0);
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  AgentCircle.prototype.hideBG = function(animated) {
+    var t = 0, t1 = 300;
+    var obj = this.bg;
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.opacity(0);
+
+    return window.timePromise(t);
   };
 
   AgentCircle.prototype.colorize = function(color, animated) {
@@ -142,8 +160,14 @@
     }
     obj.attr({'stroke': color});
 
-    return promise(t);
+    return window.timePromise(t);
+  };
+
+  AgentCircle.prototype.hide = function() {
+    this.hideFill(false);
+    this.circleOut(false);
+    this.bg.opacity(0);
   };
 
   window.AgentCircle = AgentCircle;
-})();
+})(window);

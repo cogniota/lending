@@ -1,11 +1,7 @@
-(function () {
+(function (window) {
   'use strict';
 
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
+  var ACTIVE_SETTINGS = {'opacity': 1, 'stroke-width': 4, 'stroke-opacity': 1};
 
   function AgentLine(draw, params) {
     this.sx = params.cx;
@@ -33,6 +29,14 @@
     this.line.plot(this.sx, this.sy, this.sx, this.sy);
   };
 
+  AgentLine.prototype.go = function(cx, cy, t) {
+    var obj = this.line;
+    if (t) {
+      obj = obj.animate(t);
+    }
+    obj.plot(cx, cy, this.ex, this.ey);
+  };
+
   AgentLine.prototype.show = function(animated) {
     var t = 0, t1 = 350, t2 = 500;
 
@@ -44,12 +48,12 @@
     obj.plot(this.sx, this.sy, this.ex, this.ey)
     if (animated) {
       t += t2;
-      obj.attr({'opacity': 1, 'stroke-width': 4});
+      obj.attr(ACTIVE_SETTINGS);
       obj = obj.animate(t2, 'quadOut');
     }
     obj.attr(this.SETTINGS);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentLine.prototype.activate = function(animated) {
@@ -60,9 +64,9 @@
       t += t1;
       obj = this.line.animate(t1, 'cubicOut');
     }
-    obj.attr({'opacity': 1, 'stroke-width': 4});
+    obj.attr(ACTIVE_SETTINGS);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentLine.prototype.deactivate = function(animated) {
@@ -75,7 +79,7 @@
     }
     obj.attr(this.SETTINGS);
 
-    return promise(t);
+    return window.timePromise(t);
   };
 
   AgentLine.prototype.colorize = function(color, animated) {
@@ -86,9 +90,9 @@
       obj = obj.animate(t, 'cubicIn');
     }
     obj.attr({stroke: color});
-    return promise(t);
+    return window.timePromise(t);
   };
 
   window.AgentLine = AgentLine;
 
-})();
+})(window);

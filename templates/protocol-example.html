@@ -1,0 +1,33 @@
+<div id="secondPage">
+  <div class="secondPage-content">
+    <div class="secondPage-header">
+      <div class="secondPage-header__btn">
+        <- Back To The Concept
+      </div>
+    </div>
+
+    <div class="secondPage-content__main">
+
+      @@include('./protocol-slideshow.html')
+
+      <ul class="secondPage-nav">
+        <li class="secondPage-nav__btn secondPage-nav__btn--prev"></li>
+        <li class="secondPage-nav__btn secondPage-nav__btn--play"></li>
+        <li class="secondPage-nav__btn secondPage-nav__btn--next"></li>
+      </ul>
+    </div>
+
+    <script type="text/javascript">
+    (function() {
+      if (SVG.supported) {
+        var parent = document.querySelector('#secondPage ul.secondPage-slideshow');
+        var nav = document.querySelector('#secondPage ul.secondPage-nav');
+        var slideshow = new ProtocolSlideshow(parent, nav);
+      } else {
+        alert('SVG not supported');
+      }
+    })();
+  </script>
+
+  </div>
+</div>

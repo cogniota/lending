@@ -1,4 +1,5 @@
 $darkblue: #2c414d;
+// $darkblue: rgb(77, 101, 143);
 
 .firstPage-main {
   &-container {
@@ -32,6 +33,7 @@ $darkblue: #2c414d;
       position: relative;
 
       background-color: rgba($darkblue, 0.2);
+      // transition: background-color 400ms ease-in-out;
       border-radius: 2px;
 
       &__svg {
@@ -63,6 +65,7 @@ $darkblue: #2c414d;
         white-space: initial;
 
         background-color: rgba($darkblue, 0.4);
+        // background-color: rgba(77, 101, 143, 0.4);
         color: #fff;
         border-radius: 2px;
         transition: all 400ms ease-in-out;
@@ -73,6 +76,10 @@ $darkblue: #2c414d;
         strong {
           color: #00ff62;
         }
+      }
+
+      &--description {
+        background-color: transparent;
       }
 
       &--description &__description {

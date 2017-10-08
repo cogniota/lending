@@ -1,13 +1,7 @@
-(function () {
+(function (window) {
   'use strict';
 
   var SPEED = 3000;
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   function AgentText(draw, params) {
     this.sx = params.cx;
@@ -66,11 +60,11 @@
         var x = this.cx();
         var y = this.cy();
 
-        var dx = Math.abs(x - _this.sx), dy = Math.abs(y - _this.sy);
-        if (dx > _this.showR && dy > _this.showR) {
-          var opacity = SVG.easing['expoOut'](pos * 2);
-          this.opacity(opacity);
-        }
+        // var dx = Math.abs(x - _this.sx), dy = Math.abs(y - _this.sy);
+        // if (dx > _this.showR && dy > _this.showR) {
+        // }
+        var opacity = SVG.easing['expoOut'](pos * 2);
+        this.opacity(opacity);
 
         var inML = x > _this.mlR.x1 && x < _this.mlR.x2 &&
                    y > _this.mlR.y1 && y < _this.mlR.y2;
@@ -83,24 +77,28 @@
     });
   };
 
-  AgentText.prototype.receive = function(text) {
+  AgentText.prototype.receive = function(text, cx, cy) {
+    cx = cx || this.sx;
+    cy = cy || this.sy;
+
     this.text.plain(text || '?').center(0, 0);
     this.group.move(this.ex, this.ey);
     this.group.opacity(1);
 
     var _this = this;
-    this.group.animate(SPEED).move(this.sx, this.sy).during(function (pos) {
+    this.group.animate(SPEED).move(cx, cy).during(function (pos) {
       var x = this.cx();
       var y = this.cy();
 
-      if (Math.abs(x - _this.sx) < _this.showR &&
-          Math.abs(y - _this.sy) < _this.showR) {
+      if (Math.abs(x - cx) < _this.showR &&
+          Math.abs(y - cy) < _this.showR) {
         var opacity = SVG.easing['expoIn'](pos / 2);
         this.opacity(opacity);
       }
+
     });
 
-    return promise(SPEED);
+    return window.timePromise(SPEED);
   };
 
   AgentText.prototype.colorize = function(color) {
@@ -109,4 +107,4 @@
 
   window.AgentText = AgentText;
 
-})();
+})(window);

@@ -1,7 +1,5 @@
-(function () {
-  // 'use strict';
-
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
+(function (window) {
+  'use strict';
 
   var VERTEXES = [
     {idx: 1, neightbors: [2, 6, 7], pos: [25, 25]},
@@ -94,8 +92,12 @@
 
 
   TangleCognIOTA.prototype.init = function() {
-    this._createShops();
+    this.agents = this._createShops();
     this._createMLNodes();
+
+    this.shop = this.agents[0];
+    this.providers = [1, 2, 4].map(function (i) {return _this.agents[i];});
+    this.provider = _this.providers[this.providers.length - 1];
   };
   //////
 
@@ -104,7 +106,7 @@
     var group = this.draw.group();
     this.mlCloud.group.forward();
 
-    this.agents = AGENTS_IDXS.map(function (idx, i) {
+    return AGENTS_IDXS.map(function (idx, i) {
       var vertex = _this.graph.vertexes[idx];
       var agent = new Agent(group, {
         circle: AGENT_CIRCLE_SETTINGS,
@@ -233,7 +235,8 @@
       this.agents.forEach(function (agent) {
         agent.hide();
       });
-      return this.shop.deactivate();
+      this.shop.deactivate();
+      return end();
     }
 
     var promise, animated = !params.forced;
@@ -242,10 +245,6 @@
     });
 
     return promise.then(function () {
-      _this.shop = _this.agents[0];
-      _this.providers = [1, 2, 4].map(function (i) {return _this.agents[i];});
-      _this.provider = _this.providers[_this.providers.length - 1];
-
       if (params.forced) {
         return _this.shop.activate(false).then(end);
       }
@@ -277,71 +276,86 @@
 
   TangleCognIOTA.prototype.mlAuction = function(end, params) {
     params = params || {};
+
     if (params.clear) {
       this.provider.deactivate(false);
-      return this.mlCloud.colorShadow(this.shop.color, false);
+      this.mlCloud.colorShadow(this.shop.color, false);
+      return end();
     }
 
-    var _this = this;
-
-    if (params.forced) {
-      _this.provider.activate(false);
-      _this.mlCloud.colorShadow(_this.provider.color, false);
+    else if (params.forced) {
+      this.provider.activate(false);
+      this.mlCloud.colorShadow(this.provider.color, false);
       return end();
-    } else {
-      var t1 = 200, t2 = 100;
+    }
 
-      function promisesStack(i, promise) {
-        var agent = _this.providers[i];
-        if (!agent) return end();
+    else {
+      var stack = [];
+      var _this = this;
 
-        return new Promise(function (resolve) {
+      this.providers.forEach(function (agent) {
+        stack.push(function () {
           agent.activate(true, false);
-          return _this.mlCloud.colorShadow(agent.color, true).then(function () {
-            setTimeout(function () {
-              if (agent.idx == _this.provider.idx) {
-                _this.mlCloud.ding().then(resolve);
-              } else {
-                return agent.deactivate(true, false).then(function () {
-                  return setTimeout(resolve, t2);
-                });
-              }
-            }, t1);
-          });
-        }).then(function () {
-          promisesStack(i + 1);
+          return _this.mlCloud.colorShadow(agent.color, true);
         });
-      }
 
-      return promisesStack(0, NOOPPromise);
+        stack.push(function () {
+          return window.timePromise(t1);
+        });
+
+        if (agent.idx == _this.provider.idx) {
+          stack.push(function () {
+            return _this.mlCloud.ding();
+          });
+        } else {
+          stack.push(function () {
+            return agent.deactivate(true, false);
+          });
+
+          stack.push(function () {
+            return window.timePromise(t2);
+          });
+        }
+      });
+
+      stack.push(function () {
+        return window.NOOPPromise.then(end);
+      });
+
+      return window.promisesStack(stack);
     }
 
   };
 
   TangleCognIOTA.prototype.mlChooseProvider = function(end, params) {
     params = params || {};
+
     if (params.clear) {
       this.mlCloud.colorShadow(this.provider.color, false);
       return this.provider.colorize(this.provider.color, false, false);
     }
-    if (params.forced) {
-      return;
+
+    else if (params.forced) {
+      return end();
     }
-    var _this = this;
 
-    this.mlCloud.colorShadow(this.shop.color, true);
-    this.mlCloud.ding();
-    this.provider.colorize(this.shop.color);
+    else {
+      var _this = this;
 
-    return this.provider.receiveRequest().then(function () {
-      return _this.provider.sendResponse().then(function () {
-        _this.shop.receiveResponse().then(end);
+      this.mlCloud.colorShadow(this.shop.color, true);
+      this.mlCloud.ding();
+      this.provider.colorize(this.shop.color);
+
+      return this.provider.receiveRequest().then(function () {
+        return _this.provider.sendResponse().then(function () {
+          _this.shop.receiveResponse().then(end);
+        });
       });
-    });
+    }
   };
 
 
   TangleCognIOTA.GRAPH_SETTINGS = GRAPH_SETTINGS;
 
   window.TangleCognIOTA = TangleCognIOTA;
-})();
+})(window);

@@ -13,12 +13,10 @@ body, html {
   margin:0;
 }
 
-//   font-family: 'Rajdhani', sans-serif;
-//   color: #fff;
-//   text-align: center;
-// }
-
-
+.flipped {
+  transform: rotateY(180deg);
+  transform-origin: 50% 50% 0;
+}
 // .btn {
 //   cursor: pointer;
 //   display: inline-block;

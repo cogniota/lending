@@ -1,4 +1,4 @@
-(function () {
+(function (window) {
   'use strict';
 
   function Graph(draw, vertexes, params) {
@@ -37,4 +37,4 @@
 
 
   window.Graph = Graph;
-})();
+})(window);

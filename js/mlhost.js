@@ -1,13 +1,5 @@
-(function () {
+(function (window) {
   'use strict';
-
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
-
-  function promise(t) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, t);
-    });
-  }
 
   var HEX_SETTINGS = {
     fill: '#00d6ff',
@@ -84,7 +76,7 @@
       }
     }
 
-    return promise(t1 * steps);
+    return window.timePromise(t1 * steps);
   };
 
   MLHost.prototype.showShadow = function() {
@@ -94,7 +86,7 @@
                 .ngon({edges: SHADOW_SETTINGS.edges, radius: SHADOW_SETTINGS.radius})
                 .center(this.cx, this.cy);
 
-    return promise(t + d);
+    return window.timePromise(t + d);
   };
 
   MLHost.prototype.hide = function() {
@@ -123,7 +115,7 @@
       };
       this.hex.ngon(HEX_SETTINGS).center(this.cx, this.cy).attr(HEX_SETTINGS).opacity(1);
       this.shadow.ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(this.cx, this.cy);
-      return NOOPPromise;
+      return window.NOOPPromise;
     }
   };
 
@@ -148,7 +140,7 @@
       line.animate(t3, 'sineIn').opacity(LINE_SETTINGS.opacity);
     });
 
-    return promise(t1 + d1 + t2 + t3);
+    return window.timePromise(t1 + d1 + t2 + t3);
   };
 
   MLHost.prototype.toCenter = function(cx, cy) {
@@ -162,7 +154,7 @@
     this.hex.animate(t2, 'backIn').center(cx, cy);
     this.shadow.animate(t2, 'backIn').center(cx, cy);
 
-    return promise(t2);
+    return window.timePromise(t2);
   };
 
   MLHost.prototype.disappear = function(cx, cy, r, e) {
@@ -176,7 +168,7 @@
     disappear(this.hex);
     disappear(this.shadow);
 
-    return promise(t1);
+    return window.timePromise(t1);
   };
 
   MLHost.prototype.deleteLines = function() {
@@ -184,4 +176,4 @@
   };
 
   window.MLHost = MLHost;
-})();
+})(window);

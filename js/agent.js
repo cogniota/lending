@@ -1,7 +1,5 @@
-(function () {
+(function (window) {
   'use strict';
-
-  var NOOPPromise = new Promise(function (resolve) {resolve()});
 
   function Agent(draw, params) {
     this.cx = params.cx;
@@ -17,16 +15,22 @@
     this.line = new AgentLine(this.group, params);
     this.text = new AgentText(this.group, params);
     this.circle = new AgentCircle(this.group, params);
+    this.img = new AgentImg(this.group, params);
+    this.brackets = new AgentBrackets(this.group, params);
   }
 
   Agent.prototype.hide = function(animated) {
-    this.circle.circleOut(animated);
     this.line.hide();
-    this.group.opacity(0);
+    this.circle.circleOut(animated);
+    this.circle.hideBG(animated);
+    this.circle.hideFill(animated);
+    // this.group.opacity(0);
   };
 
   Agent.prototype.show = function(animated) {
     this.group.opacity(1);
+    this.circle.showFill(true);
+    this.circle.showBG(true);
 
     var _this = this;
     return new Promise(function (resolve) {
@@ -44,7 +48,7 @@
       if (circleIn) {
         circlePromise = _this._circleOutPromise({active: true});
       } else {
-        circlePromise = NOOPPromise.then(function () {
+        circlePromise = window.NOOPPromise.then(function () {
           _this.circle.activateBorder();
         });
       }
@@ -65,12 +69,12 @@
     });
   };
 
-  Agent.prototype.sendRequest = function() {
-    return this._send('?', true);
+  Agent.prototype.sendRequest = function(t) {
+    return this._send(t || '?', true);
   };
 
-  Agent.prototype.sendResponse = function() {
-    return this._send('!', false);
+  Agent.prototype.sendResponse = function(t) {
+    return this._send(t || '!', false);
   };
 
   Agent.prototype._circleOutPromise = function(params) {
@@ -100,7 +104,7 @@
       if (circleIn) {
         circlePromise = _this._circleOutPromise({deactivate: true});
       } else {
-        circlePromise = NOOPPromise.then(function () {
+        circlePromise = window.NOOPPromise.then(function () {
           _this.circle.hideFill(animated);
           _this.circle.deactivateBorder();
         });
@@ -122,7 +126,7 @@
     return this._receive('!');
   };
 
-  Agent.prototype.receiveRequest = function(first_argument) {
+  Agent.prototype.receiveRequest = function() {
     return this._receive('?');
   };
 
@@ -143,11 +147,47 @@
     } else {
       this.line.colorize(color, false);
       this.circle.colorize(color, false);
-      return NOOPPromise;
+      return window.NOOPPromise;
     }
 
   };
 
+  Agent.prototype.blur = function(blurValue, animateBrackets) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.brackets.hide(animateBrackets).then(function () {
+        return _this.img.blur(blurValue).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.unblur = function(animated) {
+    var _this = this;
+    var a = window.NOOPPromise;
+    if (animated) {
+      a = this.brackets.show();
+    }
+    return new Promise(function (resolve) {
+      return a.then(function () {
+        return _this.img.unblur(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.go = function(cx, cy, animated) {
+    var t = animated ? 1000 : null;
+    var circle = this.circle.group;
+    if (animated) {
+      circle = circle.animate(t);
+    }
+    circle.move(cx, cy);
+
+    this.img.go(cx, cy, t);
+    this.line.go(cx, cy, t);
+
+    return window.timePromise(t);
+  };
+
   window.Agent = Agent;
 
-})();
+})(window);

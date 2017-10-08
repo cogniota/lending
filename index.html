@@ -35,116 +35,153 @@
 
 <body>
 
-  <div id="firstPage">
-  <header class="firstPage-header">
-    <div class="firstPage-header__bg">
-      <img src="dist/logo/title.png" class="firstPage-header__title">
-    </div>
-    <div>
-      <div class="firstPage-header__logo">
-        <img src="dist/logo/l.png" id="logo">
-      </div>
-    </div>
-  </header>
-
-  <h1 class="firstPage__title">Machine Learning as a service</h1>
-
-  <div class="firstPage-main-container">
-    <div class="firstPage-main">
-  <ul class="firstPage-main-slideshow">
-    <li class="firstPage-main-slideshow-item" method="createTangle">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          It is
-          <strong>IOTA tangle</strong>.
-        </div>
-      </div>
-    </li>
-
-    <li class="firstPage-main-slideshow-item" method="createMLNodes">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          Any IOTA node can be turned into a
-          <strong>machine learning node</strong>.
-        </div>
-      </div>
-    </li>
-
-    <li class="firstPage-main-slideshow-item" method="createMLCloud">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          Machine Learning nodes create
-          <strong>CognIOTA cluster.</strong>
-        </div>
-      </div>
-    </li>
-
-    <li class="firstPage-main-slideshow-item" method="shopRequests">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          IOTA nodes <strong>request</strong>
-          machine learning <strong>services</strong>
-          from CognIOTA.
-        </div>
-      </div>
-    </li>
-
-    <li class="firstPage-main-slideshow-item" method="mlSendsResponse">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          CognIOTA <strong>finds the solution</strong>
-          for the request.
-        </div>
-      </div>
-    </li>
-
-    <li class="firstPage-main-slideshow-item" method="mlAuction">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          It uses <strong>auctions</strong>
-          for finding the best task executer.
-        </div>
-      </div>
-    </li>
-
-    <li class="firstPage-main-slideshow-item" method="mlChooseProvider">
-      <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
-      <div class="firstPage-main-slideshow-item__description">
-        <div>
-          CognIOTA powers <br>
-          <strong>the economy of IoT</strong>.
-        </div>
-      </div>
-    </li>
-  </ul>
-</div>
-
-<script type="text/javascript">
-  (function() {
-    if (SVG.supported) {
-      var parent = document.querySelector('#firstPage ul.firstPage-main-slideshow');
-      var slideshow = new TangleSlideshow(parent);
-      // runMainSlideShow(parent);
-    } else {
-      alert('SVG not supported');
-    }
-  })();
-</script>
-  </div>
-
-  <!-- <div>
-    <a class="btn" id="openProtocol">
-      See Protocol Example
-    </a>
-  </div> -->
-</div>
   
+  <div id="secondPage">
+  <div class="secondPage-content">
+    <div class="secondPage-header">
+      <div class="secondPage-header__btn">
+        <- Back To The Concept
+      </div>
+    </div>
+
+    <div class="secondPage-content__main">
+
+      <ul class="secondPage-slideshow">
+  <li class="secondPage-slideshow-item" method="showDescription">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Map Description </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header=""> </div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+  <li class="secondPage-slideshow-item" method="showML">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Map Description </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header="All Participants Connected To cognIOTA."> All Participants Connected To cognIOTA.</div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+  <li class="secondPage-slideshow-item" method="initialRequest">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Stage I: Initial Request </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header="A shop sents a request to cognIOTA."> A shop sents a request to cognIOTA.</div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+  <li class="secondPage-slideshow-item" method="providersAuction">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Stage II: Providers Auction </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header="cognIOTA uses <strong>auctions</strong> to find the best match,  considering different conditions, such as <strong>price</strong>, <strong>delivery time</strong>, <strong>quality</strong> and etc."> cognIOTA uses <strong>auctions</strong> to find the best match,  considering different conditions, such as <strong>price</strong>, <strong>delivery time</strong>, <strong>quality</strong> and etc.</div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+  <li class="secondPage-slideshow-item" method="deliveryAuction">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Stage III: Delivery Auction </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header="here some text about cars auctions"> here some text about cars auctions</div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+  <li class="secondPage-slideshow-item" method="deliveryProcess">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Stage IV: Delivery </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header="here some text about delivery"> here some text about delivery</div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+  <li class="secondPage-slideshow-item" method="paymentProcess">
+  <div class="secondPage-slideshow-item__inner" container >
+    <div class="secondPage-slideshow-item__bg" bg-parent ></div>
+    <div class="secondPage-slideshow-item__svg" svg-parent >
+      <h2 class="secondPage-slideshow-item__title"> Stage V: Payment </h2>
+      <h1 class="secondPage-slideshow-item__header">
+        <div header="here some text about payment"> here some text about payment</div>
+      </h1>
+    </div>
+    <div class="secondPage-slideshow-console" console>
+      <div class="secondPage-slideshow-console__author" console-author></div>
+      <div class="secondPage-slideshow-console__body" console-body> </div>
+    </div>
+  </div>
+</li>
+
+</ul>
+
+      <ul class="secondPage-nav">
+        <li class="secondPage-nav__btn secondPage-nav__btn--prev"></li>
+        <li class="secondPage-nav__btn secondPage-nav__btn--play"></li>
+        <li class="secondPage-nav__btn secondPage-nav__btn--next"></li>
+      </ul>
+    </div>
+
+    <script type="text/javascript">
+    (function() {
+      if (SVG.supported) {
+        var parent = document.querySelector('#secondPage ul.secondPage-slideshow');
+        var nav = document.querySelector('#secondPage ul.secondPage-nav');
+        var slideshow = new ProtocolSlideshow(parent, nav);
+      } else {
+        alert('SVG not supported');
+      }
+    })();
+  </script>
+
+  </div>
+</div>
 
 
   <script type="text/javascript">
