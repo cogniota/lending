@@ -50,9 +50,9 @@ $green : #43a047;
     &__title {
       text-align: center;
       letter-spacing: 0.3em;
-      color: $green;
+      color: #1b5e20;
       margin-bottom: 0;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 300;
     }
 
@@ -61,8 +61,8 @@ $green : #43a047;
       // text-align-last: center;
       letter-spacing: 0.15em;
       // font-size: 20px;
-      font-size: 16px;
-      color: #607d8b ;
+      font-size: 18px;
+      color: #004d40 ;
       line-height: 1.2;
       padding: 0 40px;
       margin: 0;
@@ -72,19 +72,18 @@ $green : #43a047;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      font-family: 'Helvetica Neue',sans-serif;
+      // font-family: 'Helvetica Neue',sans-serif;
 
       &--accent {
-        color: #0060ff;
+        color: #0097a7;
         font-size: 26px;
         text-align: center;
         font-weight: 400;
         line-height: 1.2;
-        font-family: 'Rajdhani', sans-serif;
       }
 
       strong {
-        color: #0060ff;
+        color: #0097a7;
         // text-decoration: underline;
       }
     }

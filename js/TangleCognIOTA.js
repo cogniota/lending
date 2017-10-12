@@ -93,11 +93,13 @@
 
   TangleCognIOTA.prototype.init = function() {
     this.agents = this._createShops();
+
     this._createMLNodes();
 
+    var _this = this;
     this.shop = this.agents[0];
     this.providers = [1, 2, 4].map(function (i) {return _this.agents[i];});
-    this.provider = _this.providers[this.providers.length - 1];
+    this.provider = this.providers[this.providers.length - 1];
   };
   //////
 
@@ -292,6 +294,7 @@
     else {
       var stack = [];
       var _this = this;
+      var t1 = 200, t2 = 100;
 
       this.providers.forEach(function (agent) {
         stack.push(function () {

@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="dist/app.css">
 
   <script src="dist/svg/svg.min.js"></script>
-  <script src="dist/svg/svg.intersections.js"></script>
+  <!-- <script src="dist/svg/svg.intersections.js"></script> -->
   <script src="dist/svg/svg.pathmorphing.js"></script>
   <script src="dist/svg/svg.shapes.min.js"></script>
   <script src="dist/svg/svg.easing.min.js"></script>
@@ -16,7 +16,6 @@
 
   <link rel="icon" href="favicon.png">
 
-  <!-- <link href="https://fonts.googleapis.com/css?family=Rajdhani" rel="stylesheet"> -->
 
   <script>
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -35,16 +34,116 @@
 
 <body>
 
-  
+  <div id="firstPage">
+  <header class="firstPage-header">
+    <div class="firstPage-header__bg">
+      <img src="dist/logo/title.png" class="firstPage-header__title">
+    </div>
+    <div>
+      <div class="firstPage-header__logo">
+        <img src="dist/logo/l.png" id="logo">
+      </div>
+    </div>
+  </header>
+
+  <h1 class="firstPage__title">Machine Learning as a service</h1>
+
+  <div class="firstPage-main-container">
+    <div class="firstPage-main">
+  <ul class="firstPage-main-slideshow">
+    <li class="firstPage-main-slideshow-item" method="createTangle">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      It is <strong>IOTA tangle</strong>
+    </div>
+  </div>
+</li>
+
+    <li class="firstPage-main-slideshow-item" method="createMLNodes">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      Any IOTA node can be turned into a <strong>machine learning node</strong>
+    </div>
+  </div>
+</li>
+
+    <li class="firstPage-main-slideshow-item" method="createMLCloud">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      Machine Learning nodes create <strong>CognIOTA cluster.</strong>
+    </div>
+  </div>
+</li>
+
+    <li class="firstPage-main-slideshow-item" method="shopRequests">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      IOTA nodes <strong>request</strong> machine learning <strong>services</strong> from CognIOTA.
+    </div>
+  </div>
+</li>
+
+    <li class="firstPage-main-slideshow-item" method="mlSendsResponse">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      CognIOTA <strong>finds the solution</strong> for the request.
+    </div>
+  </div>
+</li>
+
+    <li class="firstPage-main-slideshow-item" method="mlAuction">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      It uses <strong>auctions</strong> for finding the best task executer.
+    </div>
+  </div>
+</li>
+
+    <li class="firstPage-main-slideshow-item" method="mlChooseProvider">
+  <div class="firstPage-main-slideshow-item__svg" svg-parent></div>
+  <div class="firstPage-main-slideshow-item__description">
+    <div>
+      CognIOTA powers <br> <strong>the economy of IoT</strong>.
+    </div>
+  </div>
+</li>
+  </ul>
+</div>
+
+  </div>
+
+  <div id="openProtocolExample__container" >
+    <a id="openProtocolExample" class="hide">
+      See Real Use Case Example
+    </a>
+  </div>
+
+  <script type="text/javascript">
+  (function() {
+    if (SVG.supported) {
+      var parent = document.querySelector('#firstPage ul.firstPage-main-slideshow');
+      var slideshow = new TangleSlideshow(parent);
+    } else {
+      alert('SVG not supported');
+    }
+  })();
+</script>
+</div>
   <div id="secondPage">
   <div class="secondPage-content">
     <div class="secondPage-header">
-      <div class="secondPage-header__btn">
+      <div class="secondPage-header__btn" id="closeProtocolExample">
         <- Back To The Concept
       </div>
     </div>
 
-    <div class="secondPage-content__main">
+    <div class="secondPage-content__main" >
 
       <ul class="secondPage-slideshow">
   <li class="secondPage-slideshow-item" method="showDescription">
@@ -162,22 +261,62 @@
 </ul>
 
 
-      <ul class="secondPage-nav">
+<!--       <ul class="secondPage-nav">
         <li class="secondPage-nav__btn secondPage-nav__btn--prev"></li>
         <li class="secondPage-nav__btn secondPage-nav__btn--play"></li>
         <li class="secondPage-nav__btn secondPage-nav__btn--next"></li>
-      </ul>
+      </ul> -->
     </div>
 
     <script type="text/javascript">
     (function() {
+      var slideshow;
+      var openProtocolBtn = document.querySelector('#openProtocolExample');
+      var bbox = openProtocolBtn.getBoundingClientRect();
+
+      var secondPage = document.querySelector('#secondPage');
+      secondPage.style.left = 0;
+      secondPage.style.top = 0;
+      secondPage.style.width = '100%';
+      secondPage.style.height = '100%';
+
+      var parent = document.querySelector('#secondPage ul.secondPage-slideshow');
       if (SVG.supported) {
-        var parent = document.querySelector('#secondPage ul.secondPage-slideshow');
-        var nav = document.querySelector('#secondPage ul.secondPage-nav');
-        var slideshow = new ProtocolSlideshow(parent, nav);
+        // var nav = document.querySelector('#secondPage ul.secondPage-nav');
+        var nav;
+        slideshow = new ProtocolSlideshow(parent, nav);
       } else {
         alert('SVG not supported');
       }
+
+      secondPage.style.left = bbox.x + 'px';
+      secondPage.style.top = bbox.y + 'px';
+      secondPage.style.width = bbox.width + 'px';
+      secondPage.style.height = bbox.height + 'px';
+
+      var isOpen = false;
+      var closeProtocolBtnID = 'closeProtocolExample';
+      var closeProtocolBtn = document.getElementById(closeProtocolBtnID);
+      function toggle(event) {
+        if (isOpen === true) {
+          document.body.className = '';
+          slideshow.stop();
+          isOpen = false;
+          closeProtocolBtn.removeEventListener('click', toggle);
+          setTimeout(function () {
+            secondPage.addEventListener('click', toggle);
+          }, 200);
+        } else {
+          document.body.className = 'secondPage';
+          setTimeout(function () {
+            slideshow.play();
+            closeProtocolBtn.addEventListener('click', toggle);
+          }, 200);
+          isOpen = true;
+          secondPage.removeEventListener('click', toggle);
+        }
+      };
+      secondPage.addEventListener('click', toggle);
     })();
   </script>
 
@@ -185,11 +324,6 @@
 </div>
 
 
-  <script type="text/javascript">
-    (function() {
-      // start();
-    })();
-  </script>
 </body>
 
 </html>

@@ -46,7 +46,7 @@
     text.font({
       fill: '#fff',
       size: this.SETTINGS.fz,
-    }).center(0, 0);
+    }).style({'font-family': this.SETTINGS.family}).center(0, 0);
     return text;
   };
 

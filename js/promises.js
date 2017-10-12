@@ -12,12 +12,18 @@
     return new Promise(function (end) {
       function process(i) {
         var p = stack[i];
-        if (!p) return end();
+        if (!p || stack.stop) return end();
 
         return new Promise(function (resolve) {
+          if (stack.stop) {
+            end();
+            resolve();
+          }
           return p().then(resolve);
         }).then(function () {
-          process(i + 1);
+          if (!stack.stop) {
+            process(i + 1);
+          }
         });
       }
 

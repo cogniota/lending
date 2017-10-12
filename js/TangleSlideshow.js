@@ -34,8 +34,9 @@
     // this.currState = 0;
     // this.currentN = N;
 
-
-    _this.goNext();
+    setTimeout(function () {
+      _this.goNext();
+    }, 400);
   }
 
   TangleSlideshow.prototype.createSlide = function(elem, i, method) {

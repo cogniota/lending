@@ -3,6 +3,12 @@
 #firstPage {
   height: 100%;
   position: relative;
+  // position: absolute;
+  min-height: 700px;
+  // top: 0;
+  // left: 0;
+  // right: 0;
+  // bottom: 0;
   z-index: 1;
   background-size: cover;
   background-image: url(bg/7.png);
@@ -46,6 +52,7 @@
   letter-spacing: 0.15em;
   text-align: center;
   margin:0;
+  margin-bottom: 10px;
   line-height: 1.5;
   text-shadow: 0 0 2px rgba(0, 0, 0, .3);
 }

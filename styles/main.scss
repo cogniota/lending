@@ -6,7 +6,7 @@
   src: local('Rajdhani Regular'), local('Rajdhani-Regular'), url(https://fonts.gstatic.com/s/rajdhani/v6/tz3398jtBIhi1rrADn6BZnYhjbSpvc47ee6xR_80Hnw.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
 }
-body, html {
+body {
   height: 100%;
   width: 100%;
   padding: 0;
@@ -17,50 +17,31 @@ body, html {
   transform: rotateY(180deg);
   transform-origin: 50% 50% 0;
 }
-// .btn {
-//   cursor: pointer;
-//   display: inline-block;
-//   background: #43a047;
-//   padding: 10px 20px;
-//   font-size: 18px;
-
-//   // &[active] {
-//   //   background: #b2ff59;
-//   //   color: #43a047;
-//   // }
-// }
 
 
-// .blured {
-//   filter: blur(25px) grayscale(30%) brightness(150%);
-// }
+.tree {
+  transition: transform 150ms ease-out;
+}
 
-// .overflowed {
-//   transition-delay: 20ms;
-//   transition-timing-function: ease-in;
-//   filter: blur(13px) grayscale(30%)  brightness(90%);
-//   opacity: 0.3;
-// }
+.fallen-tree {
+  transform: rotateZ(60deg);
+  transform-origin: 50% 80% 0;
+}
 
-// .blured-light {
-//   filter: blur(4px)  brightness(110%);
-// }
+#openProtocolExample {
+  cursor: pointer;
+  display: inline-block;
+  background: #43a047;
+  padding: 10px 20px;
+  font-size: 18px;
+  color: #fff;
+  transition: opacity 300ms ease-out;
+  letter-spacing: 0.15em;
 
-// .flipped {
-//   transform: rotateY(180deg);
-//   transform-origin: 50% 50% 0;
-// }
 
-// h1 {
-//   text-transform: uppercase;
-//   font-size: 34px;
-//   font-weight: 300;
-//   letter-spacing: 0.15em;
-// }
+  &__container {
+    text-align: center;
+    margin-top: 40px;
+  }
+}
 
-// h2 {
-//   // text-transform: uppercase;
-//   font-size: 20px;
-//   font-weight: 300;
-//   letter-spacing: 0.15em;
-// }

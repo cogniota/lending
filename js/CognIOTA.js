@@ -14,6 +14,14 @@
     this._init();
   };
 
+  CognIOTA.prototype.stop = function() {
+    if (this.stack) {
+      this.stack.stop = true;
+      this.stack = undefined;
+    }
+    this.out();
+  };
+
   CognIOTA.prototype.play = function(end) {
     var beforePlayTime = 1000;
     var afterPlayTime = 1000;
@@ -74,12 +82,7 @@
     }
 
     stack.push(function () {
-      return _this.writeConsole({
-        author: _this.mlCloud,
-        verb: 'broabcasts',
-        type: 'AUCTION INITIAL',
-        lines: packets.initial(),
-      });
+      return _this.writeConsole(packets.initial());
     });
 
     stack.push(function () {
@@ -109,12 +112,7 @@
     agents.forEach(function (agent, i) {
 
       stack.push(function () {
-        return _this.writeConsole({
-          author: agent,
-          verb: 'answers',
-          type: 'AUCTION BET',
-          lines: packets.bet(agent),
-        });
+        return _this.writeConsole(packets.bet(agent));
       });
 
       stack.push(function () {
@@ -130,12 +128,7 @@
 
     agents.forEach(function (agent) {
       stack.push(function () {
-        _this.writeConsole({
-          author: _this.mlCloud,
-          verb: 'calculates',
-          type: '--',
-          lines: packets.calculate(agent),
-        });
+        _this.writeConsole(packets.calculate(agent));
         return window.NOOPPromise;
       });
 
@@ -171,6 +164,7 @@
     });
 
     stack.push(function () {
+      _this.writeConsole(packets.ack(winner));
       _this.mlCloud.colorShadow(_this.shop.color, true);
       return winner.colorize(_this.shop.color, false, true);
     });

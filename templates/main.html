@@ -16,9 +16,20 @@
     @@include('./main-slideshow.html')
   </div>
 
-  <div>
-    <a class="btn" id="openProtocolExample">
-      See Protocol Example
+  <div id="openProtocolExample__container" >
+    <a id="openProtocolExample" class="hide">
+      See Real Use Case Example
     </a>
   </div>
+
+  <script type="text/javascript">
+  (function() {
+    if (SVG.supported) {
+      var parent = document.querySelector('#firstPage ul.firstPage-main-slideshow');
+      var slideshow = new TangleSlideshow(parent);
+    } else {
+      alert('SVG not supported');
+    }
+  })();
+</script>
 </div>

@@ -25,14 +25,8 @@
     this._init();
     // this._initBtns();
 
-    this.currentN = -1;
-    // this.currentN = 0;
-    // this.currentN = 1;
-    // this.currentN = 2;
-    // this.currentN = 3;
-    // this.currentN = 4;
-    // this.currentN = 5;
-    this.goNext();
+    // this.currentN = -1;
+    // this.goNext();
   }
 
   ProtocolSlideshow.prototype._init = function() {
@@ -84,10 +78,9 @@
                    .center(cx, cy)
                    .scale(sx, sy);
 
-    // draw.text(i + '').font({size: 30}).center(cx, cy).opacity(0.5)
-
     return {
       plot: function (d, s, e) {
+        d = d || 'rect';
         path.stop();
 
         var obj = path;
@@ -110,11 +103,14 @@
     var headerElement = elem.querySelector('[header]');
     var consoleElement = elem.querySelector('[console]');
 
+    var draw = SVG(svgId);
+
     var protocol = new ProtocolCognIOTA({
-      root: SVG(svgId),
+      root: draw,
       method: method,
       preparationMethods : this.methods.slice(),
     }, headerElement, consoleElement);
+
 
     return protocol;
   };
@@ -123,11 +119,19 @@
     var bg = this.createBG(slide, i);
     var cogniota = this.createAnimation(slide, i, method);
 
+    var _this = this;
     return {
       play: function () {
         return new Promise(function (resolve) {
           return cogniota.play(resolve);
         });
+      },
+      stop: function () {
+        bg.plot();
+        cogniota.headerElement.stop = true;
+        cogniota.stop();
+        // cogniota == undefined;
+        // cogniota = _this.createAnimation(slide, i, method);
       },
       out: function (dir, speed) {
         return new Promise(function (resolve) {
@@ -146,11 +150,31 @@
     }
   };
 
+  ProtocolSlideshow.prototype.play = function() {
+    this.inPlay = true;
+    this.currentN = -1;
+    // this.currentN = 0;
+    // this.currentN = 1;
+    // this.currentN = 2;
+    // this.currentN = 3;
+    // this.currentN = 4;
+    // this.currentN = 5;
+    this.goNext();
+  };
+
+  ProtocolSlideshow.prototype.stop = function() {
+    this.inPlay = false;
+    this.items[0].stop(); // to rect
+    this._translate(0);
+    this.isAnimating = false;
+    this.currentN = -1;
+  };
+
   ProtocolSlideshow.prototype.goNext = function() {
     var nextN = this.currentN + 1;
     if (nextN > (this.items.length - 1)) {
       nextN = 0;
-      return;
+      // return;
     }
 
     this._morph(nextN);
@@ -175,7 +199,7 @@
 
 
   ProtocolSlideshow.prototype._morph = function(nextN) {
-    if (this.isAnimating) return;
+    if (this.isAnimating || !this.inPlay) return;
 
     this.isAnimating = true;
     var _this = this;
@@ -221,7 +245,7 @@
 
     window.promisesStack(stack).then(function () {
       _this.isAnimating = false;
-      _this.goNext();
+      if (_this.inPlay) _this.goNext();
     });
 
   };

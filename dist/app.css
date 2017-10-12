@@ -1,6 +1,7 @@
 #firstPage {
   height: 100%;
   position: relative;
+  min-height: 700px;
   z-index: 1;
   background-size: cover;
   background-image: url(bg/7.png);
@@ -17,7 +18,8 @@
 .firstPage-header__bg {
   background: #fff;
   height: 45px;
-  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2);
+  -webkit-box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2);
 }
 
 .firstPage-header__title {
@@ -43,6 +45,7 @@
   letter-spacing: 0.15em;
   text-align: center;
   margin: 0;
+  margin-bottom: 10px;
   line-height: 1.5;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
 }
@@ -82,6 +85,7 @@
   z-index: 1;
   height: 100%;
   width: 100%;
+  -webkit-transition: opacity 400ms ease-in-out;
   transition: opacity 400ms ease-in-out;
 }
 
@@ -106,13 +110,16 @@
   font-size: 30px;
   letter-spacing: 0.1em;
   line-height: 1.5;
-  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
   white-space: initial;
   background-color: rgba(44, 65, 77, 0.4);
   color: #fff;
   border-radius: 2px;
+  -webkit-transition: all 400ms ease-in-out;
   transition: all 400ms ease-in-out;
-  transition-delay: 0;
+  -webkit-transition-delay: 0;
+          transition-delay: 0;
   opacity: 0;
   -webkit-filter: blur(10px);
           filter: blur(10px);
@@ -136,7 +143,8 @@
   -webkit-filter: blur(16px) grayscale(50%);
           filter: blur(16px) grayscale(50%);
   opacity: 0.3;
-  transition-delay: 10ms;
+  -webkit-transition-delay: 10ms;
+          transition-delay: 10ms;
 }
 
 /* latin */
@@ -148,7 +156,7 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
 }
 
-body, html {
+body {
   height: 100%;
   width: 100%;
   padding: 0;
@@ -162,11 +170,43 @@ body, html {
           transform-origin: 50% 50% 0;
 }
 
+.tree {
+  -webkit-transition: -webkit-transform 150ms ease-out;
+  transition: -webkit-transform 150ms ease-out;
+  transition: transform 150ms ease-out;
+  transition: transform 150ms ease-out, -webkit-transform 150ms ease-out;
+}
+
+.fallen-tree {
+  -webkit-transform: rotateZ(60deg);
+          transform: rotateZ(60deg);
+  -webkit-transform-origin: 50% 80% 0;
+          transform-origin: 50% 80% 0;
+}
+
+#openProtocolExample {
+  cursor: pointer;
+  display: inline-block;
+  background: #43a047;
+  padding: 10px 20px;
+  font-size: 18px;
+  color: #fff;
+  -webkit-transition: opacity 300ms ease-out;
+  transition: opacity 300ms ease-out;
+  letter-spacing: 0.15em;
+}
+
+#openProtocolExample__container {
+  text-align: center;
+  margin-top: 40px;
+}
+
 .secondPage-slideshow {
   list-style: none;
   margin: 0;
   padding: 0;
   position: absolute;
+  -webkit-transition: -webkit-transform 500ms cubic-bezier(0.8, 0, 0.2, 1) 100ms;
   transition: -webkit-transform 500ms cubic-bezier(0.8, 0, 0.2, 1) 100ms;
   transition: transform 500ms cubic-bezier(0.8, 0, 0.2, 1) 100ms;
   transition: transform 500ms cubic-bezier(0.8, 0, 0.2, 1) 100ms, -webkit-transform 500ms cubic-bezier(0.8, 0, 0.2, 1) 100ms;
@@ -217,17 +257,17 @@ body, html {
 .secondPage-slideshow-item__title {
   text-align: center;
   letter-spacing: 0.3em;
-  color: #43a047;
+  color: #1b5e20;
   margin-bottom: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 300;
 }
 
 .secondPage-slideshow-item__header {
   text-align: left;
   letter-spacing: 0.15em;
-  font-size: 16px;
-  color: #607d8b;
+  font-size: 18px;
+  color: #004d40;
   line-height: 1.2;
   padding: 0 40px;
   margin: 0;
@@ -243,20 +283,18 @@ body, html {
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
-  font-family: 'Helvetica Neue',sans-serif;
 }
 
 .secondPage-slideshow-item__header--accent {
-  color: #0060ff;
+  color: #0097a7;
   font-size: 26px;
   text-align: center;
   font-weight: 400;
   line-height: 1.2;
-  font-family: 'Rajdhani', sans-serif;
 }
 
 .secondPage-slideshow-item__header strong {
-  color: #0060ff;
+  color: #0097a7;
 }
 
 .secondPage-slideshow-console {
@@ -289,27 +327,30 @@ body, html {
 }
 
 #secondPage {
+  font-family: 'Rajdhani', sans-serif;
   position: fixed;
   z-index: 10;
   opacity: 0;
   cursor: pointer;
   overflow: hidden;
   overflow-y: scroll;
-  transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+  -webkit-transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+          transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+  -webkit-transition: opacity 0.3s 0.5s, width 0.4s 0.1s, height 0.4s 0.1s, top 0.4s 0.1s, left 0.4s 0.1s, background-color 0.4s 0.1s;
   transition: opacity 0.3s 0.5s, width 0.4s 0.1s, height 0.4s 0.1s, top 0.4s 0.1s, left 0.4s 0.1s, background-color 0.4s 0.1s;
-  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
   background-color: #43a047;
 }
 
-#secondPage-content {
+.secondPage-content {
   visibility: hidden;
   height: 0;
-  opacity: 0;
+  -webkit-transition: opacity 0.1s, visibility 0s 0.1s, height 0s 0.1s;
   transition: opacity 0.1s, visibility 0s 0.1s, height 0s 0.1s;
 }
 
-#secondPage {
-  font-family: 'Rajdhani', sans-serif;
+body.secondPage #secondPage {
   opacity: 1;
   top: 0 !important;
   left: 0 !important;
@@ -317,17 +358,16 @@ body, html {
   height: 100% !important;
   cursor: default;
   pointer-events: auto;
+  -webkit-transition: width 0.4s 0.1s, height 0.4s 0.1s, top 0.4s 0.1s, left 0.4s 0.1s, background-color 0.4s 0.1s;
   transition: width 0.4s 0.1s, height 0.4s 0.1s, top 0.4s 0.1s, left 0.4s 0.1s, background-color 0.4s 0.1s;
 }
 
-#secondPage-content {
+body.secondPage .secondPage-content {
   visibility: visible;
   height: 100%;
-  opacity: 1;
-  transition: all 300ms 300ms;
 }
 
-#secondPage-content__main {
+body.secondPage .secondPage-content__main {
   overflow: hidden;
   position: absolute;
   left: 0;
@@ -444,7 +484,9 @@ body, html {
   border-left: 20px solid white;
   position: absolute;
   top: 0;
-  transition-timing-function: ease;
+  -webkit-transition-timing-function: ease;
+          transition-timing-function: ease;
+  -webkit-transition: all 200ms;
   transition: all 200ms;
 }
 

@@ -30,6 +30,10 @@
     {idx: 20, pos: [178, 342], neightbors: []},
     {idx: 21, pos: [301, 352], neightbors: [22]},
     {idx: 22, pos: [457, 332], neightbors: []},
+
+    {idx: 23, pos: [120, 220], neightbors: []},
+
+    {idx: 24, pos: [142, 249], neightbors: []},
   ];
 
   var GRAPH_SETTINGS = {
@@ -44,12 +48,17 @@
     shop: 'dist/shopping.png',
     carEmpty: 'dist/carEmpty.png',
     carFull: 'dist/car.png',
+    tree: 'dist/tree.png',
   };
 
+  var TREES = [
+    {idx: 23},
+  ];
+
   var WHOUSES = [
-    {idx: 4, color: '#03a9f4', params: {bet: ['27', 'yesterday']}},
-    {idx: 14, color: '#9e4f24', params: {bet: ['25', 'today']}},
-    {idx: 21, color: '#00838f', params: {bet: ['15', 'today']}},
+    {idx: 4, color: '#03a9f4', params: {bet: ['27', '750']}},
+    {idx: 14, color: '#9e4f24', params: {bet: ['25', '500']}},
+    {idx: 21, color: '#00838f', params: {bet: ['15', '680']}},
   ];
 
   var SHOPS = [
@@ -61,9 +70,15 @@
   ];
 
   var CARS = [
-    {idx: 7, color: '#b71c1c', params: {bet: ['17', 'yesterday']}},
-    {idx: 9, color: '#ff6f00', params: {bet: ['31', 'yesterday']}}, 
-    {idx: 19, color: '#ff4081', params: {bet: ['12', 'today']}},
+    {idx: 7, color: '#b71c1c', params: {bet:
+      ['10', ['17', '100'], 'low']
+    }},
+    {idx: 9, color: '#ff6f00', params: {bet:
+      ['8', ['31', '65'], 'low']
+    }},
+    {idx: 19, color: '#ff4081', params: {bet:
+      ['3', ['12', '50'], 'average']
+    }},
   ];
 
   var AGENT_IMG_SETTINGS = {
@@ -76,7 +91,7 @@
     border: 1,
 
     bg: {
-      fill: '#edecda',
+      fill: 'transparent',
     },
 
     'fill-opacity': 0.4,
@@ -85,7 +100,8 @@
 
   var DELIVERY_PATH = {
     toWarehouse: [15, 16, 21],
-    toShop: [16, 15, 11, 6, 1],
+    toTree: [16, 15, 24],
+    toShop: [15, 14, 10, 5, 6, 1],
     toEnd: [2],
   };
 
@@ -93,13 +109,14 @@
 
   var AGENT_LINE_SETTINGS = {
     'stroke-width': 2,
-    'stroke-opacity': 0.6,
+    'stroke-opacity': 0.2,
   };
 
   var AGENT_TEXT_SETTINGS = {
     r: 11,
     'stroke-width': 2,
     'fill-opacity': 0.3,
+    'family': 'Times, serif',
     bg: {
       fill: '#63749b',
       'fill-opacity': 0.9,
@@ -155,6 +172,9 @@
 
   ProtocolCognIOTA.prototype.init = function() {
     this.bg = this._addBG();
+    this.trees = this._createElements(TREES, IMG_SRC.tree);
+    this.tree = this.trees[0];
+    this.tree.img.img.addClass('tree');
     this.whouses = this._createElements(WHOUSES, IMG_SRC.whouse);
     this.shops = this._createElements(SHOPS, IMG_SRC.shop);
     this.cars = this._createElements(CARS, IMG_SRC.carEmpty);
@@ -165,9 +185,12 @@
     this.provider = this.whouses[this.whouses.length - 1];
     this.delivery = this.cars[this.cars.length - 1];
 
+
     this.shopBid = {
       price: '23',
       day: 'today',
+      quantity: '678',
+      speed: 'average',
     }
   };
 
@@ -232,7 +255,7 @@
       });
 
       agent.ip = generateIP(8) + '...';
-      
+
       s.params = s.params || {};
       for (var name in s.params) {
         agent[name] = s.params[name];
@@ -265,6 +288,7 @@
   ProtocolCognIOTA.prototype._writeHeader = function(text) {
     text = text || '';
     var _this = this;
+    this.headerElement.stop = false;
     var badIdx = -1;
     var stack = (text + ' ').split('').reduce(function (bucket, l, i) {
       if (l == '<') {
@@ -273,8 +297,13 @@
 
       if (i > badIdx) {
         bucket.push(function () {
-          _this.headerElement.innerHTML = text.slice(0, i);
-          return window.timePromise(TYPE_SPEED);
+          if (!_this.headerElement.stop) {
+            _this.headerElement.innerHTML = text.slice(0, i);
+            return window.timePromise(TYPE_SPEED);
+          } else {
+            stack.stop = true;
+            return NOOPPromise;
+          }
         });
       }
       return bucket;
@@ -328,8 +357,24 @@
 
   ProtocolCognIOTA.prototype.showDescription = function(end, params) {
     params = params || {};
+    var _this = this;
+
+    function clear() {
+      _this._writeHeader();
+      classie.remove(_this.headerElement, HEADER_ACCENT_CLASS);
+
+      _this.trees.unblur();
+      _this.bg.unblur();
+      _this.shops.unblur();
+      _this.whouses.unblur();
+      _this.cars.unblur();
+
+      return NOOPPromise;
+    }
 
     if (params.clear) {
+      clear();
+      this.headerElement.innerHTML = ' ';
       return end();
     }
 
@@ -343,12 +388,12 @@
       classie.add(this.headerElement, HEADER_ACCENT_CLASS);
 
       var t1 = 100, t2 = 300, t3 = 1000;
-      var _this = this;
       var blurValue = '3 3';
 
       var stack = [];
 
       stack.push(function () {
+        _this.trees.blur(blurValue);
         _this.bg.blur(blurValue);
         _this.shops.blur(blurValue);
         _this.whouses.blur(blurValue);
@@ -359,7 +404,7 @@
         {title: 'Automatic Shops', elements: _this.shops},
         {title: 'Automatic Warehouses', elements: _this.whouses},
         {title: 'Self-Driving Cars', elements: _this.cars},
-      ].forEach(function (params) {
+      ].forEach(function (params, i) {
         var title = params.title;
         var elements = params.elements;
 
@@ -389,20 +434,16 @@
       });
 
       stack.push(function () {
-        return _this._writeHeader();
-        classie.remove(_this.headerElement, HEADER_ACCENT_CLASS);
+        return timePromise(200);
+      })
 
-        _this.bg.unblur();
-        _this.shops.unblur();
-        _this.whouses.unblur();
-        return _this.cars.unblur();
-      });
+      stack.push(clear);
 
 
       stack.push(function () {
         return window.NOOPPromise.then(end);
       });
-
+      this.stack = stack;
       return window.promisesStack(stack);
     }
   };
@@ -449,6 +490,7 @@
     stack.push(function () {
       return window.NOOPPromise.then(end);
     });
+    this.stack = stack;
     return window.promisesStack(stack);
 
   };
@@ -489,9 +531,9 @@
           type: 'INITIAL',
           lines: {
             PRODUCT: 'milk',
-            QUANTITY: '678',
+            QUANTITY: spanColor + _this.shopBid.quantity + '</span>',
             MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-            //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+            SPEED: spanColor + _this.shopBid.speed + '</span>'
           },
         });
       });
@@ -511,6 +553,7 @@
     stack.push(function () {
       return window.NOOPPromise.then(end);
     });
+    this.stack = stack;
     return window.promisesStack(stack);
 
   };
@@ -543,29 +586,56 @@
       initial: function (agent) {
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          REQUEST: 'start auction',
-          MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-          //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+          author: _this.mlCloud,
+          verb: 'broabcasts',
+          type: 'AUCTION_BROADCAST',
+          lines: {
+            PRODUCT: 'milk',
+            MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
+            QUANTITY: spanColor + _this.shopBid.quantity + '</span>',
+          }
         };
       },
       bet: function (agent) {
         var spanColor = '<span style="color:' + agent.color + '">';
         return {
-          PRODUCT: 'milk',
-          PRICE: spanColor + agent.bet[0] + '</span>',
-          //RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
+          author: agent,
+          verb: 'answers',
+          type: 'AUCTION_BID',
+          lines: {
+            PRODUCT: 'milk',
+            PRICE: spanColor + agent.bet[0] + '</span>',
+            QUANTITY: spanColor + agent.bet[1] + '</span>',
+          }
         };
       },
       calculate: function (agent) {
         var agentSpanColor = '<span style="color:' + agent.color + '">';
-        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        // var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          PRICE: agentSpanColor + agent.bet[0] + '</span>' +
-                '(requested is ' + spanColor +  _this.shopBid.price + '</span>)',
-          //RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
-         //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
+          author: _this.mlCloud,
+          verb: 'calculates',
+          type: '--',
+          lines: {
+            PRODUCT: 'milk',
+            PRICE: agentSpanColor + agent.bet[0] + '</span>',
+            QUANTITY: agentSpanColor + agent.bet[1] + '</span>',
+          }
         };
-      }
+      },
+      ack: function (agent) {
+        var spanColor = '<span style="color:' + agent.color + '">';
+        return {
+          author: _this.mlCloud,
+          verb: 'answers',
+          type: 'AUCTION_ACK',
+          lines: {
+            PRODUCT: 'milk',
+            PRICE: spanColor + agent.bet[0] + '</span>',
+            QUANTITY: spanColor + agent.bet[1] + '</span>',
+          }
+        };
+      },
     };
 
     var auctionStack = this.auction(this.whouses, this.provider, auctionPackets, params.forced)
@@ -574,6 +644,7 @@
     stack.push(function () {
       return window.NOOPPromise.then(end);
     });
+    this.stack = stack;
     return window.promisesStack(stack);
   };
 
@@ -602,30 +673,54 @@
       initial: function (agent) {
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          PRODUCT: 'milk',
-          MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-          //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
-
+          author: _this.mlCloud,
+          verb: 'broabcasts',
+          type: 'AUCTION_BROADCAST',
+          // lines: {
+          //   MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
+          //   QUANTITY: spanColor + _this.shopBid.quantity + '</span>',
+          // }
         };
       },
       bet: function (agent) {
         var spanColor = '<span style="color:' + agent.color + '">';
         return {
-          PRODUCT: 'milk',
-          PRICE: spanColor + agent.bet[0] + '</span>',
-          // RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
+          author: agent,
+          verb: 'answers',
+          type: 'AUCTION_BID',
+          lines: {
+            PRICE: spanColor + agent.bet[0] + '</span> / km',
+            LAT: spanColor + agent.bet[1][0] + '</span>',
+            LNT: spanColor + agent.bet[1][1] + '</span>',
+          }
         };
       },
       calculate: function (agent) {
         var agentSpanColor = '<span style="color:' + agent.color + '">';
-        var spanColor = '<span style="color:' + _this.shop.color + '">';
+        // var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          PRICE: agentSpanColor + agent.bet[0] + '</span>' +
-                 '(requested is ' + spanColor +  _this.shopBid.price + '</span>)',
-          // RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
-          //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
+          author: _this.mlCloud,
+          verb: 'calculates',
+          type: '--',
+          lines: {
+            PRICE: agentSpanColor + agent.bet[0] + '</span> / km',
+            SPEED: agentSpanColor + agent.bet[2] + '</span>',
+          }
         };
-      }
+      },
+      ack: function (agent) {
+        var spanColor = '<span style="color:' + agent.color + '">';
+        return {
+          author: _this.mlCloud,
+          verb: 'answers',
+          type: 'AUCTION_ACK',
+          lines: {
+            WAREHOUS_POSITION: '[110, 80]',
+            SHOP_POSITION: '[120, 100]',
+            PRODUCT: 'milk',
+          }
+        };
+      },
     };
 
     var auctionStack = this.auction(this.cars, this.delivery, auctionPackets, params.forced)
@@ -634,6 +729,7 @@
     stack.push(function () {
       return window.NOOPPromise.then(end);
     });
+    this.stack = stack;
     return window.promisesStack(stack);
   };
 
@@ -652,6 +748,7 @@
       this.clearConsole();
       this.delivery.img.update(IMG_SRC.carEmpty);
       this.delivery.go(this.delivery.cx, this.delivery.cy, false);
+      this.tree.img.img.removeClass('fallen-tree');
       return end();
     }
 
@@ -659,6 +756,7 @@
       this.delivery.img.update(IMG_SRC.carEmpty);
       var lastIdx = DELIVERY_PATH.toEnd[DELIVERY_PATH.toEnd.length - 1];
       toVertex(lastIdx, false);
+      this.tree.img.img.addClass('fallen-tree');
       return end();
     }
 
@@ -685,6 +783,17 @@
         return _this.mlCloud.ding();
       });
 
+      DELIVERY_PATH.toTree.forEach(function (idx) {
+        stack.push(function () {
+          return toVertex(idx, true);
+        });
+      });
+
+      stack.push(function () {
+        _this.tree.img.img.addClass('fallen-tree');
+        return window.timePromise(150);
+      });
+
       DELIVERY_PATH.toShop.forEach(function (idx) {
         stack.push(function () {
           return toVertex(idx, true);
@@ -709,6 +818,7 @@
       stack.push(function () {
         return window.NOOPPromise.then(end);
       });
+      this.stack = stack;
       return window.promisesStack(stack);
     }
   };
@@ -739,7 +849,7 @@
       });
 
       stack.push(function () {
-        return _this.shop.sendRequest('$');
+        return _this.shop.sendRequest('I');
       });
 
       stack.push(function () {
@@ -748,8 +858,8 @@
       });
 
       stack.push(function () {
-        _this.provider.text.receive('$');
-        return _this.delivery.text.receive('$', _this.delivery.img.cx, _this.delivery.img.cy);
+        _this.provider.text.receive('I');
+        return _this.delivery.text.receive('I', _this.delivery.img.cx, _this.delivery.img.cy);
       });
 
       stack.push(function () {
@@ -761,6 +871,7 @@
       stack.push(function () {
         return window.NOOPPromise.then(end);
       });
+      this.stack = stack;
       return window.promisesStack(stack);
     }
   };

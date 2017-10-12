@@ -78,21 +78,13 @@
       return window.NOOPPromise;
     } else {
       var t = 500;
-      // this.logo.opacity(0);
       this.group.scale(0.01);
-      // this.group.rotate(-30);
       this.group.opacity(1);
 
       var _this = this;
       this.group.animate(t, 'elastic').scale(0.8).during(function (pos, morph) {
-        // console.log(p)
-        // if (pos > 0.3) {
-          var p = SVG.easing['circIn'](pos) * 360;
-          // this.rotate(p * 360);
-        // _this.group.rotate(10);
         _this.shadow.rotate(pos * 360);
         _this.hex.rotate(pos * 360);
-        // }
       });
 
       return window.timePromise(t);
