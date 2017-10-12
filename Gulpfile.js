@@ -4,6 +4,9 @@ var concat = require('gulp-concat');
 var sourcemaps = require('gulp-sourcemaps');
 var autoprefixer = require('gulp-autoprefixer');
 var fileinclude = require('gulp-file-include');
+var minifyHtml = require("gulp-minify-html");
+var minifyCss = require("gulp-minify-css");
+var uglify = require("gulp-uglify");
 
 var sassOptions = {
   errLogToConsole: true,
@@ -26,6 +29,7 @@ gulp.task('styles', function () {
       // .pipe(sourcemaps.write(distPath))
       .pipe(concat('app.css'))
       .pipe(autoprefixer(autoprefixerOptions))
+      .pipe(minifyCss())
       .pipe(gulp.dest(distPath));
 });
 
@@ -33,6 +37,7 @@ gulp.task('styles', function () {
 gulp.task('js', function () {
   gulp.src(jsSrc)
       .pipe(concat('app.js'))
+      .pipe(uglify())
       .pipe(gulp.dest(distPath));
 });
 
@@ -42,6 +47,7 @@ gulp.task('fileinclude', function() {
       prefix: '@@',
       basepath: '@file'
     }))
+    .pipe(minifyHtml())
     .pipe(gulp.dest('./'));
 });
 

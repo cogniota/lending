@@ -6,11 +6,6 @@
   <link rel="stylesheet" href="dist/app.css">
 
   <script src="dist/svg/svg.min.js"></script>
-  <!-- <script src="dist/svg/svg.intersections.js"></script> -->
-  <script src="dist/svg/svg.pathmorphing.js"></script>
-  <script src="dist/svg/svg.shapes.min.js"></script>
-  <script src="dist/svg/svg.easing.min.js"></script>
-  <script src="dist/svg/svg.filter.min.js"></script>
 
   <script src="dist/app.js"></script>
 
@@ -38,6 +33,16 @@
   @@include('./protocol-example.html')
 
 
+    <script type="text/javascript">
+    (function() {
+      if (SVG.supported) {
+        createMain();
+        createSalesman();
+      } else {
+        alert('SVG not supported');
+      }
+    })();
+  </script>
 </body>
 
 </html>

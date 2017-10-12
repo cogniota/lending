@@ -19,7 +19,7 @@
   var LOGO_SETTINGS = {
     width: 50,
     height: 50,
-    url: 'dist/logo/l4.png',
+    url: 'dist/logo/l4_100.png',
   };
 
   function MLCloud (draw, cx, cy) {

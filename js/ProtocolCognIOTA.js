@@ -43,12 +43,12 @@
   };
 
   var IMG_SRC = {
-    bg: 'dist/env.png',
-    whouse: 'dist/storage.png',
-    shop: 'dist/shopping.png',
-    carEmpty: 'dist/carEmpty.png',
-    carFull: 'dist/car.png',
-    tree: 'dist/tree.png',
+    bg: 'dist/img/env.png',
+    whouse: 'dist/img/storage.png',
+    shop: 'dist/img/shopping.png',
+    carEmpty: 'dist/img/carEmpty.png',
+    carFull: 'dist/img/car.png',
+    tree: 'dist/img/tree.png',
   };
 
   var TREES = [
