@@ -47,7 +47,7 @@
   };
 
   var WHOUSES = [
-    {idx: 4, color: '#03a9f4', params: {bet: ['20', 'yesterday']}},
+    {idx: 4, color: '#03a9f4', params: {bet: ['27', 'yesterday']}},
     {idx: 14, color: '#9e4f24', params: {bet: ['25', 'today']}},
     {idx: 21, color: '#00838f', params: {bet: ['15', 'today']}},
   ];
@@ -61,9 +61,9 @@
   ];
 
   var CARS = [
-    {idx: 7, color: '#b71c1c'},
-    {idx: 9, color: '#ff6f00'},
-    {idx: 19, color: '#ff4081'},
+    {idx: 7, color: '#b71c1c', params: {bet: ['17', 'yesterday']}},
+    {idx: 9, color: '#ff6f00', params: {bet: ['31', 'yesterday']}}, 
+    {idx: 19, color: '#ff4081', params: {bet: ['12', 'today']}},
   ];
 
   var AGENT_IMG_SETTINGS = {
@@ -357,7 +357,7 @@
 
       [
         {title: 'Automatic Shops', elements: _this.shops},
-        {title: 'Automatic Wirehouses', elements: _this.whouses},
+        {title: 'Automatic Warehouses', elements: _this.whouses},
         {title: 'Self-Driving Cars', elements: _this.cars},
       ].forEach(function (params) {
         var title = params.title;
@@ -489,9 +489,9 @@
           type: 'INITIAL',
           lines: {
             PRODUCT: 'milk',
-            SPEED: 'medium',
+            QUANTITY: '678',
             MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-            RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+            //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
           },
         });
       });
@@ -543,10 +543,9 @@
       initial: function (agent) {
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          PRODUCT: 'milk',
+          REQUEST: 'start auction',
           MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-          RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
-
+          //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
         };
       },
       bet: function (agent) {
@@ -554,7 +553,7 @@
         return {
           PRODUCT: 'milk',
           PRICE: spanColor + agent.bet[0] + '</span>',
-          RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
+          //RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
         };
       },
       calculate: function (agent) {
@@ -562,9 +561,9 @@
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
           PRICE: agentSpanColor + agent.bet[0] + '</span>' +
-                '(requered is ' + spanColor +  _this.shopBid.price + '</span>)',
-          RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
-                '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
+                '(requested is ' + spanColor +  _this.shopBid.price + '</span>)',
+          //RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
+         //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
         };
       }
     };
@@ -605,7 +604,7 @@
         return {
           PRODUCT: 'milk',
           MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-          RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+          //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
 
         };
       },
@@ -613,7 +612,7 @@
         var spanColor = '<span style="color:' + agent.color + '">';
         return {
           PRODUCT: 'milk',
-          // PRICE: spanColor + agent.bet[0] + '</span>',
+          PRICE: spanColor + agent.bet[0] + '</span>',
           // RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
         };
       },
@@ -621,8 +620,8 @@
         var agentSpanColor = '<span style="color:' + agent.color + '">';
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          // PRICE: agentSpanColor + agent.bet[0] + '</span>' +
-          //       '(requered is ' + spanColor +  _this.shopBid.price + '</span>)',
+          PRICE: agentSpanColor + agent.bet[0] + '</span>' +
+                 '(requested is ' + spanColor +  _this.shopBid.price + '</span>)',
           // RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
           //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
         };

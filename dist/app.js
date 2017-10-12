@@ -1,199 +1,6 @@
 (function (window) {
   'use strict';
 
-  function Agent(draw, params) {
-    this.cx = params.cx;
-    this.cy = params.cy;
-    this.color = params.color;
-
-    this.group = draw.group();
-    this.idx = this.group.id();
-
-    params.cx = this.cx;
-    params.cy = this.cy;
-
-    this.line = new AgentLine(this.group, params);
-    this.text = new AgentText(this.group, params);
-    this.circle = new AgentCircle(this.group, params);
-    this.img = new AgentImg(this.group, params);
-    this.brackets = new AgentBrackets(this.group, params);
-  }
-
-  Agent.prototype.hide = function(animated) {
-    this.line.hide();
-    this.circle.circleOut(animated);
-    this.circle.hideBG(animated);
-    this.circle.hideFill(animated);
-    // this.group.opacity(0);
-  };
-
-  Agent.prototype.show = function(animated) {
-    this.group.opacity(1);
-    this.circle.showFill(true);
-    this.circle.showBG(true);
-
-    var _this = this;
-    return new Promise(function (resolve) {
-      return _this.circle.circleIn(animated, {earlyStart: true, active: true}).then(function () {
-        _this.circle.deactivateBorder(true);
-        return _this.line.show(animated).then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype.activate = function(animated, circleIn) {
-    var _this = this;
-    return new Promise(function (resolve) {
-      var circlePromise;
-      if (circleIn) {
-        circlePromise = _this._circleOutPromise({active: true});
-      } else {
-        circlePromise = window.NOOPPromise.then(function () {
-          _this.circle.activateBorder();
-        });
-      }
-      return circlePromise.then(function () {
-        _this.circle.activateBorder(animated);
-        _this.circle.showFill(animated);
-        return _this.line.activate(animated).then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype._send = function(t, circleIn) {
-    var _this = this;
-    return new Promise(function (resolve) {
-      return _this.activate(true, circleIn).then(function () {
-        return _this.text.send(t).then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype.sendRequest = function(t) {
-    return this._send(t || '?', true);
-  };
-
-  Agent.prototype.sendResponse = function(t) {
-    return this._send(t || '!', false);
-  };
-
-  Agent.prototype._circleOutPromise = function(params) {
-    params = params || {};
-    var _this = this;
-    return new Promise(function (resolve) {
-      _this.circle.hideFill(true);
-      return _this.circle.circleOut(true).then(function () {
-        if (params.deactivate) {
-          _this.circle.deactivateBorder(true);
-        } else {
-          _this.circle.showFill(true);
-        }
-        return _this.circle.circleIn(true, {active: params.active}).then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype.deactivate = function(animated, circleIn) {
-    var _this = this;
-    return new Promise(function (resolve) {
-      _this.line.deactivate(animated);
-      _this.circle.deactivateBorder(animated);
-      _this.circle.hideFill(animated);
-
-      var circlePromise;
-      if (circleIn) {
-        circlePromise = _this._circleOutPromise({deactivate: true});
-      } else {
-        circlePromise = window.NOOPPromise.then(function () {
-          _this.circle.hideFill(animated);
-          _this.circle.deactivateBorder();
-        });
-      }
-      return circlePromise.then(resolve);
-    });
-  };
-
-  Agent.prototype._receive = function(t) {
-    var _this = this;
-    return new Promise(function (resolve) {
-      return _this.text.receive(t).then(function () {
-        return _this._circleOutPromise().then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype.receiveResponse = function() {
-    return this._receive('!');
-  };
-
-  Agent.prototype.receiveRequest = function() {
-    return this._receive('?');
-  };
-
-  Agent.prototype.colorize = function(color, reversed, animated) {
-    this.text.colorize(color);
-    var _this = this;
-
-    if (animated) {
-      return new Promise(function (resolve) {
-        var first = _this.line, second = _this.circle;
-        if (reversed) {
-          first = _this.circle, second = _this.line;
-        }
-        return first.colorize(color).then(function () {
-          return second.colorize(color).then(resolve);
-        });
-      });
-    } else {
-      this.line.colorize(color, false);
-      this.circle.colorize(color, false);
-      return window.NOOPPromise;
-    }
-
-  };
-
-  Agent.prototype.blur = function(blurValue, animateBrackets) {
-    var _this = this;
-    return new Promise(function (resolve) {
-      return _this.brackets.hide(animateBrackets).then(function () {
-        return _this.img.blur(blurValue).then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype.unblur = function(animated) {
-    var _this = this;
-    var a = window.NOOPPromise;
-    if (animated) {
-      a = this.brackets.show();
-    }
-    return new Promise(function (resolve) {
-      return a.then(function () {
-        return _this.img.unblur(animated).then(resolve);
-      });
-    });
-  };
-
-  Agent.prototype.go = function(cx, cy, animated) {
-    var t = animated ? 1000 : null;
-    var circle = this.circle.group;
-    if (animated) {
-      circle = circle.animate(t);
-    }
-    circle.move(cx, cy);
-
-    this.img.go(cx, cy, t);
-    this.line.go(cx, cy, t);
-
-    return window.timePromise(t);
-  };
-
-  window.Agent = Agent;
-
-})(window);
-(function (window) {
-  'use strict';
-
   function AgentBrackets(draw, params) {
     this.cx = params.cx;
     this.cy = params.cy;
@@ -894,369 +701,6 @@
 (function (window) {
   'use strict';
 
-  var HEX_SETTINGS = {
-    radius: 30,
-    fill: '#00d6ff',
-    edges: 8,
-    stroke: '#00d6ff',
-    'stroke-width': 0,
-  };
-
-  var SHADOW_SETTINGS = {
-    edges: HEX_SETTINGS.edges,
-    fill: HEX_SETTINGS.fill,
-    radius: HEX_SETTINGS.radius * 1.3,
-    opacity: 0.3,
-  };
-
-  var LOGO_SETTINGS = {
-    width: 50,
-    height: 50,
-    url: 'dist/logo/l4.png',
-  };
-
-  function MLCloud (draw, cx, cy) {
-    this.cx = cx;
-    this.cy = cy;
-
-    this.color = '#0060ff';
-    this.ip = 'cogniOTA';
-
-    this.group = draw.group();
-    this.group.move(this.cx, this.cy);
-    this.group.width(SHADOW_SETTINGS.radius * 2).height(SHADOW_SETTINGS.radius * 2);
-
-    this.shadow = this.drawShadow();
-    this.hex = this.drawHex();
-    this.logo = this.drawLogo();
-
-    this.group.opacity(0);
-  }
-
-  MLCloud.prototype.drawShadow = function() {
-    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS);
-    shadow.opacity(0);
-
-    setTimeout(function () {
-      shadow.opacity(1).attr(SHADOW_SETTINGS).center(0, 0);
-    }, 10);
-    return shadow;
-  };
-
-  MLCloud.prototype.drawHex = function() {
-    var hex = this.group.polygon().ngon(HEX_SETTINGS);
-    hex.opacity(0);
-
-    var _this = this;
-    setTimeout(function () {
-      _this.width = hex.node.getBBox().width;
-      hex.opacity(1).attr(HEX_SETTINGS).center(0, 0);
-    }, 10);
-    return hex;
-  };
-
-  MLCloud.prototype.drawLogo = function() {
-    var logo = this.group.image(
-      LOGO_SETTINGS.url,
-      LOGO_SETTINGS.width,
-      LOGO_SETTINGS.height
-    );
-    logo.move(-LOGO_SETTINGS.width / 2, -LOGO_SETTINGS.height / 2);
-    return logo;
-  };
-
-  MLCloud.prototype.show = function(animated) {
-    if (!animated) {
-      this.group.opacity(1);
-      return window.NOOPPromise;
-    } else {
-      var t = 500;
-      // this.logo.opacity(0);
-      this.group.scale(0.01);
-      // this.group.rotate(-30);
-      this.group.opacity(1);
-
-      var _this = this;
-      this.group.animate(t, 'elastic').scale(0.8).during(function (pos, morph) {
-        // console.log(p)
-        // if (pos > 0.3) {
-          var p = SVG.easing['circIn'](pos) * 360;
-          // this.rotate(p * 360);
-        // _this.group.rotate(10);
-        _this.shadow.rotate(pos * 360);
-        _this.hex.rotate(pos * 360);
-        // }
-      });
-
-      return window.timePromise(t);
-    }
-  };
-
-  MLCloud.prototype.hide = function() {
-    this.group.opacity(0);
-  };
-
-  MLCloud.prototype.fallInColor = function(color, animated) {
-    var t = 0, t1 = 200, d1 = 350, t2 = 180, d2 = 100, t3 = 400;
-    var k1 = 1, k2 = 1.08;
-    this.hex.attr({'stroke': color});
-
-    var hex, shadow;
-
-    if (animated) {
-      shadow = this.shadow.animate(t1);
-      this.hex.delay(t1);
-      t += t1;
-    } else {
-      shadow = this.shadow;
-    }
-    shadow.fill(color);
-
-    if (animated) {
-      hex = this.hex.delay(d1).animate(t2);
-      this.shadow.delay(d1).animate(t2).scale(0.8);
-      shadow = this.shadow.delay(d2).animate(t3, 'elastic');
-      t += d1 + t2 + d2 + t3 - 300;
-    } else {
-      hex = this.hex;
-      shadow = this.shadow;
-    }
-    hex.ngon({edges: HEX_SETTINGS.edges, radius: 0.1})
-       .attr({'stroke-width': this.width * k1})
-       .center(0, 0);
-    shadow.scale(k2);
-
-    return window.timePromise(t);
-  };
-
-  MLCloud.prototype.fallOutColor = function() {
-    var t = 0, t1 = 300, t2 = 180, t3 = 400;
-
-    this.hex.animate(t1, '>')
-             .ngon({edges: HEX_SETTINGS.edges, radius: HEX_SETTINGS.radius})
-             .attr({'stroke-width': 0})
-             .center(0, 0);
-    this.shadow.delay(t1).animate(t2).fill(this.color);
-    this.shadow.animate(t3, 'elastic').scale(1);
-
-    return window.timePromise(t);
-  };
-
-  MLCloud.prototype.toDefault = function () {
-    this.hex.scale(1).ngon(HEX_SETTINGS).attr(HEX_SETTINGS).center(0, 0);
-    this.shadow.scale(1).ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(0, 0);
-  };
-
-  MLCloud.prototype.ding = function(reversed) {
-    var t = 300;
-    this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
-
-    return window.timePromise(t * 2);
-  };
-
-  MLCloud.prototype.colorShadow = function(color, animated) {
-    var t = 0, t1 = 200;
-
-    var obj = this.shadow;
-
-    if (animated) {
-      t += t1;
-      obj = obj.animate(t1);
-    }
-    obj.fill(color);
-
-    return window.timePromise(t);
-  };
-
-  MLCloud.fill = HEX_SETTINGS.fill;
-  MLCloud.edges = HEX_SETTINGS.edges;
-  MLCloud.r = SHADOW_SETTINGS.radius;
-
-  window.MLCloud = MLCloud;
-
-})(window);
-(function (window) {
-  'use strict';
-
-  var HEX_SETTINGS = {
-    fill: '#00d6ff',
-    edges: 6,
-    edgesStart: 3,
-    radius: 15,
-  };
-
-  var SHADOW_SETTINGS = {
-    fill: HEX_SETTINGS.fill,
-    edges: HEX_SETTINGS.edges,
-    radius: HEX_SETTINGS.radius * 1.3,
-    opacity: 0.3,
-  };
-
-  var LINE_SETTINGS = {
-    stroke: HEX_SETTINGS.fill,
-    'stroke-width': 1.5,
-    opacity: 0.7,
-  };
-
-  function MLHost(draw, vertex) {
-    this.cx = vertex.pos[0];
-    this.cy = vertex.pos[1];
-
-    this.HIDE_PARAMS = {
-      edges: HEX_SETTINGS.edgesStart,
-      radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
-      fill: TangleCognIOTA.GRAPH_SETTINGS.stroke
-    };
-
-    this.group = draw.group().width(100);
-    this.shadow = this.drawShadow();
-    this.hex = this.drawHex(MLCloud.fill);
-  }
-
-  MLHost.prototype.drawShadow = function() {
-    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS).opacity(0);
-    var _this = this;
-    setTimeout(function () {
-      shadow.center(_this.cx, _this.cy).attr(SHADOW_SETTINGS)
-    }, 10);
-    return shadow;
-  };
-
-  MLHost.prototype.drawHex = function() {
-    var hex = this.group.polygon().ngon(HEX_SETTINGS).opacity(0);
-    // it takes a little to change the path
-    hex.attr(HEX_SETTINGS);
-    var _this = this;
-    setTimeout(function () {
-      hex.center(_this.cx, _this.cy).opacity(1)
-    }, 10);
-    return hex;
-  };
-
-  MLHost.prototype.showHex = function() {
-    var t1 = 70;
-
-    this.hex.fill(this.HIDE_PARAMS.fill);
-
-    var r = TangleCognIOTA.GRAPH_SETTINGS.r / 2,
-        edges = HEX_SETTINGS.edgesStart;
-
-    var steps = HEX_SETTINGS.edges - HEX_SETTINGS.edgesStart,
-        rStep = (HEX_SETTINGS.radius - r) / steps,
-        totalT = t1 * steps;
-
-    for (; edges <= HEX_SETTINGS.edges; edges++, r+=rStep) {
-      var hexAnimation = this.hex.animate(t1);
-      hexAnimation.ngon({edges: edges, radius: r}).center(this.cx, this.cy);
-      if (edges >= HEX_SETTINGS.edges - 1) {
-        hexAnimation.fill(HEX_SETTINGS.fill);
-      }
-    }
-
-    return window.timePromise(t1 * steps);
-  };
-
-  MLHost.prototype.showShadow = function() {
-    var t = 300, d = 80;
-    this.shadow.delay(100)
-               .animate(300, 'backOut')
-                .ngon({edges: SHADOW_SETTINGS.edges, radius: SHADOW_SETTINGS.radius})
-                .center(this.cx, this.cy);
-
-    return window.timePromise(t + d);
-  };
-
-  MLHost.prototype.hide = function() {
-    this.hex.ngon(this.HIDE_PARAMS)
-            .fill('transparent')
-            .opacity(1).center(this.cx, this.cy);
-
-    this.shadow.ngon({edges: SHADOW_SETTINGS.edges, radius: 0.1})
-               .opacity(SHADOW_SETTINGS.opacity)
-               .center(this.cx, this.cy);
-  };
-
-  MLHost.prototype.show = function(animated) {
-    if (animated) {
-      var _this = this;
-      return new Promise(function (resolve) {
-        _this.showHex(animated).then(function () {
-          _this.showShadow(animated).then(resolve);
-        });
-      });
-    } else {
-      var params = {
-        edges: HEX_SETTINGS.edgesStart,
-        radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
-        fill: TangleCognIOTA.GRAPH_SETTINGS.fill
-      };
-      this.hex.ngon(HEX_SETTINGS).center(this.cx, this.cy).attr(HEX_SETTINGS).opacity(1);
-      this.shadow.ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(this.cx, this.cy);
-      return window.NOOPPromise;
-    }
-  };
-
-  MLHost.prototype.connectTo = function(neightbors) {
-    var _this = this;
-
-    var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
-    var linesGroup = this.linesGroup = this.group.group();
-
-    neightbors.forEach(function (n) {
-      var pos = [_this.cx, _this.cy];
-      var line = linesGroup.line(new SVG.PointArray([pos, pos]));
-      line.attr(LINE_SETTINGS).opacity(0.3);
-
-      var middle = [
-        _this.cx - ((_this.cx - n.cx) / 2),
-        _this.cy - ((_this.cy - n.cy) / 2)
-      ];
-      line.animate(t1, 'sineOut').plot(new SVG.PointArray([pos, middle]));
-
-      line.delay(d1).animate(t2, 'sineOut').opacity(1);
-      line.animate(t3, 'sineIn').opacity(LINE_SETTINGS.opacity);
-    });
-
-    return window.timePromise(t1 + d1 + t2 + t3);
-  };
-
-  MLHost.prototype.toCenter = function(cx, cy) {
-    var t1 = 100, t2 = 250;
-    var _this = this;
-
-    this.linesGroup.animate(t1).opacity(0).once(1, function () {
-      _this.deleteLines();
-    });
-
-    this.hex.animate(t2, 'backIn').center(cx, cy);
-    this.shadow.animate(t2, 'backIn').center(cx, cy);
-
-    return window.timePromise(t2);
-  };
-
-  MLHost.prototype.disappear = function(cx, cy, r, e) {
-    var t1 = 300;
-    function disappear (elem, params) {
-      elem.animate(t1, '>').ngon({radius: r * 1.6, edges: e})
-                           .center(cx, cy)
-                           .opacity(0);
-    }
-
-    disappear(this.hex);
-    disappear(this.shadow);
-
-    return window.timePromise(t1);
-  };
-
-  MLHost.prototype.deleteLines = function() {
-    this.linesGroup.remove();
-  };
-
-  window.MLHost = MLHost;
-})(window);
-(function (window) {
-  'use strict';
-
   var TYPE_SPEED = 50;
 
   var VERTEXES = [
@@ -1303,7 +747,7 @@
   };
 
   var WHOUSES = [
-    {idx: 4, color: '#03a9f4', params: {bet: ['20', 'yesterday']}},
+    {idx: 4, color: '#03a9f4', params: {bet: ['27', 'yesterday']}},
     {idx: 14, color: '#9e4f24', params: {bet: ['25', 'today']}},
     {idx: 21, color: '#00838f', params: {bet: ['15', 'today']}},
   ];
@@ -1317,9 +761,9 @@
   ];
 
   var CARS = [
-    {idx: 7, color: '#b71c1c'},
-    {idx: 9, color: '#ff6f00'},
-    {idx: 19, color: '#ff4081'},
+    {idx: 7, color: '#b71c1c', params: {bet: ['17', 'yesterday']}},
+    {idx: 9, color: '#ff6f00', params: {bet: ['31', 'yesterday']}}, 
+    {idx: 19, color: '#ff4081', params: {bet: ['12', 'today']}},
   ];
 
   var AGENT_IMG_SETTINGS = {
@@ -1613,7 +1057,7 @@
 
       [
         {title: 'Automatic Shops', elements: _this.shops},
-        {title: 'Automatic Wirehouses', elements: _this.whouses},
+        {title: 'Automatic Warehouses', elements: _this.whouses},
         {title: 'Self-Driving Cars', elements: _this.cars},
       ].forEach(function (params) {
         var title = params.title;
@@ -1745,9 +1189,9 @@
           type: 'INITIAL',
           lines: {
             PRODUCT: 'milk',
-            SPEED: 'medium',
+            QUANTITY: '678',
             MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-            RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+            //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
           },
         });
       });
@@ -1799,10 +1243,9 @@
       initial: function (agent) {
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          PRODUCT: 'milk',
+          REQUEST: 'start auction',
           MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-          RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
-
+          //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
         };
       },
       bet: function (agent) {
@@ -1810,7 +1253,7 @@
         return {
           PRODUCT: 'milk',
           PRICE: spanColor + agent.bet[0] + '</span>',
-          RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
+          //RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
         };
       },
       calculate: function (agent) {
@@ -1818,9 +1261,9 @@
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
           PRICE: agentSpanColor + agent.bet[0] + '</span>' +
-                '(requered is ' + spanColor +  _this.shopBid.price + '</span>)',
-          RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
-                '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
+                '(requested is ' + spanColor +  _this.shopBid.price + '</span>)',
+          //RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
+         //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
         };
       }
     };
@@ -1861,7 +1304,7 @@
         return {
           PRODUCT: 'milk',
           MAX_PRICE: spanColor + _this.shopBid.price + '</span>',
-          RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
+          //RELEASE_DATE: spanColor + _this.shopBid.day + '</span>',
 
         };
       },
@@ -1869,7 +1312,7 @@
         var spanColor = '<span style="color:' + agent.color + '">';
         return {
           PRODUCT: 'milk',
-          // PRICE: spanColor + agent.bet[0] + '</span>',
+          PRICE: spanColor + agent.bet[0] + '</span>',
           // RELEASE_DATE: spanColor + agent.bet[1] + '</span>',
         };
       },
@@ -1877,8 +1320,8 @@
         var agentSpanColor = '<span style="color:' + agent.color + '">';
         var spanColor = '<span style="color:' + _this.shop.color + '">';
         return {
-          // PRICE: agentSpanColor + agent.bet[0] + '</span>' +
-          //       '(requered is ' + spanColor +  _this.shopBid.price + '</span>)',
+          PRICE: agentSpanColor + agent.bet[0] + '</span>' +
+                 '(requested is ' + spanColor +  _this.shopBid.price + '</span>)',
           // RELEASE_DATE: agentSpanColor + agent.bet[1] + '</span>' +
           //       '(requered is ' + spanColor +  _this.shopBid.day + '</span>)',
         };
@@ -2024,6 +1467,7 @@
 
   window.ProtocolCognIOTA = ProtocolCognIOTA;
 })(window);
+
 (function (window) {
   'use strict';
 
@@ -2253,40 +1697,6 @@
   };
 
   window.ProtocolSlideshow = ProtocolSlideshow;
-})(window);
-(function (window) {
-  'use strict';
-
-  window.Random = {
-    range: function range(min, max) {
-      return Math.round(Math.random() * (max - min) + min);
-    },
-    choice: function choice(arr) {
-      var max = arr.length;
-      if (max === void 0) {
-        arr = Object.keys(arr);
-        max = arr.length;
-      }
-      var n = this.range(0, max - 1);
-      return arr[n];
-    },
-    shuffle: function shuffle(_a) {
-      var a = _a.slice();
-      var j, x, i;
-      for (i = a.length; i; i--) {
-          j = Math.floor(Math.random() * i);
-          x = a[i - 1];
-          a[i - 1] = a[j];
-          a[j] = x;
-      }
-      return a;
-    },
-    deviate: function deviate(i, d) {
-      var a = this.range(d * -1, d);
-      return i + a;
-    }
-  };
-
 })(window);
 (function (window) {
   'use strict';
@@ -2779,6 +2189,199 @@
 
   window.TangleSlideshow = TangleSlideshow;
 })(window);
+(function (window) {
+  'use strict';
+
+  function Agent(draw, params) {
+    this.cx = params.cx;
+    this.cy = params.cy;
+    this.color = params.color;
+
+    this.group = draw.group();
+    this.idx = this.group.id();
+
+    params.cx = this.cx;
+    params.cy = this.cy;
+
+    this.line = new AgentLine(this.group, params);
+    this.text = new AgentText(this.group, params);
+    this.circle = new AgentCircle(this.group, params);
+    this.img = new AgentImg(this.group, params);
+    this.brackets = new AgentBrackets(this.group, params);
+  }
+
+  Agent.prototype.hide = function(animated) {
+    this.line.hide();
+    this.circle.circleOut(animated);
+    this.circle.hideBG(animated);
+    this.circle.hideFill(animated);
+    // this.group.opacity(0);
+  };
+
+  Agent.prototype.show = function(animated) {
+    this.group.opacity(1);
+    this.circle.showFill(true);
+    this.circle.showBG(true);
+
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.circle.circleIn(animated, {earlyStart: true, active: true}).then(function () {
+        _this.circle.deactivateBorder(true);
+        return _this.line.show(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.activate = function(animated, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      var circlePromise;
+      if (circleIn) {
+        circlePromise = _this._circleOutPromise({active: true});
+      } else {
+        circlePromise = window.NOOPPromise.then(function () {
+          _this.circle.activateBorder();
+        });
+      }
+      return circlePromise.then(function () {
+        _this.circle.activateBorder(animated);
+        _this.circle.showFill(animated);
+        return _this.line.activate(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype._send = function(t, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.activate(true, circleIn).then(function () {
+        return _this.text.send(t).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.sendRequest = function(t) {
+    return this._send(t || '?', true);
+  };
+
+  Agent.prototype.sendResponse = function(t) {
+    return this._send(t || '!', false);
+  };
+
+  Agent.prototype._circleOutPromise = function(params) {
+    params = params || {};
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.circle.hideFill(true);
+      return _this.circle.circleOut(true).then(function () {
+        if (params.deactivate) {
+          _this.circle.deactivateBorder(true);
+        } else {
+          _this.circle.showFill(true);
+        }
+        return _this.circle.circleIn(true, {active: params.active}).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.deactivate = function(animated, circleIn) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      _this.line.deactivate(animated);
+      _this.circle.deactivateBorder(animated);
+      _this.circle.hideFill(animated);
+
+      var circlePromise;
+      if (circleIn) {
+        circlePromise = _this._circleOutPromise({deactivate: true});
+      } else {
+        circlePromise = window.NOOPPromise.then(function () {
+          _this.circle.hideFill(animated);
+          _this.circle.deactivateBorder();
+        });
+      }
+      return circlePromise.then(resolve);
+    });
+  };
+
+  Agent.prototype._receive = function(t) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.text.receive(t).then(function () {
+        return _this._circleOutPromise().then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.receiveResponse = function() {
+    return this._receive('!');
+  };
+
+  Agent.prototype.receiveRequest = function() {
+    return this._receive('?');
+  };
+
+  Agent.prototype.colorize = function(color, reversed, animated) {
+    this.text.colorize(color);
+    var _this = this;
+
+    if (animated) {
+      return new Promise(function (resolve) {
+        var first = _this.line, second = _this.circle;
+        if (reversed) {
+          first = _this.circle, second = _this.line;
+        }
+        return first.colorize(color).then(function () {
+          return second.colorize(color).then(resolve);
+        });
+      });
+    } else {
+      this.line.colorize(color, false);
+      this.circle.colorize(color, false);
+      return window.NOOPPromise;
+    }
+
+  };
+
+  Agent.prototype.blur = function(blurValue, animateBrackets) {
+    var _this = this;
+    return new Promise(function (resolve) {
+      return _this.brackets.hide(animateBrackets).then(function () {
+        return _this.img.blur(blurValue).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.unblur = function(animated) {
+    var _this = this;
+    var a = window.NOOPPromise;
+    if (animated) {
+      a = this.brackets.show();
+    }
+    return new Promise(function (resolve) {
+      return a.then(function () {
+        return _this.img.unblur(animated).then(resolve);
+      });
+    });
+  };
+
+  Agent.prototype.go = function(cx, cy, animated) {
+    var t = animated ? 1000 : null;
+    var circle = this.circle.group;
+    if (animated) {
+      circle = circle.animate(t);
+    }
+    circle.move(cx, cy);
+
+    this.img.go(cx, cy, t);
+    this.line.go(cx, cy, t);
+
+    return window.timePromise(t);
+  };
+
+  window.Agent = Agent;
+
+})(window);
 /*!
  * classie v1.0.1
  * class helper functions
@@ -2907,6 +2510,369 @@ if ( typeof define === 'function' && define.amd ) {
 (function (window) {
   'use strict';
 
+  var HEX_SETTINGS = {
+    radius: 30,
+    fill: '#00d6ff',
+    edges: 8,
+    stroke: '#00d6ff',
+    'stroke-width': 0,
+  };
+
+  var SHADOW_SETTINGS = {
+    edges: HEX_SETTINGS.edges,
+    fill: HEX_SETTINGS.fill,
+    radius: HEX_SETTINGS.radius * 1.3,
+    opacity: 0.3,
+  };
+
+  var LOGO_SETTINGS = {
+    width: 50,
+    height: 50,
+    url: 'dist/logo/l4.png',
+  };
+
+  function MLCloud (draw, cx, cy) {
+    this.cx = cx;
+    this.cy = cy;
+
+    this.color = '#0060ff';
+    this.ip = 'cogniOTA';
+
+    this.group = draw.group();
+    this.group.move(this.cx, this.cy);
+    this.group.width(SHADOW_SETTINGS.radius * 2).height(SHADOW_SETTINGS.radius * 2);
+
+    this.shadow = this.drawShadow();
+    this.hex = this.drawHex();
+    this.logo = this.drawLogo();
+
+    this.group.opacity(0);
+  }
+
+  MLCloud.prototype.drawShadow = function() {
+    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS);
+    shadow.opacity(0);
+
+    setTimeout(function () {
+      shadow.opacity(1).attr(SHADOW_SETTINGS).center(0, 0);
+    }, 10);
+    return shadow;
+  };
+
+  MLCloud.prototype.drawHex = function() {
+    var hex = this.group.polygon().ngon(HEX_SETTINGS);
+    hex.opacity(0);
+
+    var _this = this;
+    setTimeout(function () {
+      _this.width = hex.node.getBBox().width;
+      hex.opacity(1).attr(HEX_SETTINGS).center(0, 0);
+    }, 10);
+    return hex;
+  };
+
+  MLCloud.prototype.drawLogo = function() {
+    var logo = this.group.image(
+      LOGO_SETTINGS.url,
+      LOGO_SETTINGS.width,
+      LOGO_SETTINGS.height
+    );
+    logo.move(-LOGO_SETTINGS.width / 2, -LOGO_SETTINGS.height / 2);
+    return logo;
+  };
+
+  MLCloud.prototype.show = function(animated) {
+    if (!animated) {
+      this.group.opacity(1);
+      return window.NOOPPromise;
+    } else {
+      var t = 500;
+      // this.logo.opacity(0);
+      this.group.scale(0.01);
+      // this.group.rotate(-30);
+      this.group.opacity(1);
+
+      var _this = this;
+      this.group.animate(t, 'elastic').scale(0.8).during(function (pos, morph) {
+        // console.log(p)
+        // if (pos > 0.3) {
+          var p = SVG.easing['circIn'](pos) * 360;
+          // this.rotate(p * 360);
+        // _this.group.rotate(10);
+        _this.shadow.rotate(pos * 360);
+        _this.hex.rotate(pos * 360);
+        // }
+      });
+
+      return window.timePromise(t);
+    }
+  };
+
+  MLCloud.prototype.hide = function() {
+    this.group.opacity(0);
+  };
+
+  MLCloud.prototype.fallInColor = function(color, animated) {
+    var t = 0, t1 = 200, d1 = 350, t2 = 180, d2 = 100, t3 = 400;
+    var k1 = 1, k2 = 1.08;
+    this.hex.attr({'stroke': color});
+
+    var hex, shadow;
+
+    if (animated) {
+      shadow = this.shadow.animate(t1);
+      this.hex.delay(t1);
+      t += t1;
+    } else {
+      shadow = this.shadow;
+    }
+    shadow.fill(color);
+
+    if (animated) {
+      hex = this.hex.delay(d1).animate(t2);
+      this.shadow.delay(d1).animate(t2).scale(0.8);
+      shadow = this.shadow.delay(d2).animate(t3, 'elastic');
+      t += d1 + t2 + d2 + t3 - 300;
+    } else {
+      hex = this.hex;
+      shadow = this.shadow;
+    }
+    hex.ngon({edges: HEX_SETTINGS.edges, radius: 0.1})
+       .attr({'stroke-width': this.width * k1})
+       .center(0, 0);
+    shadow.scale(k2);
+
+    return window.timePromise(t);
+  };
+
+  MLCloud.prototype.fallOutColor = function() {
+    var t = 0, t1 = 300, t2 = 180, t3 = 400;
+
+    this.hex.animate(t1, '>')
+             .ngon({edges: HEX_SETTINGS.edges, radius: HEX_SETTINGS.radius})
+             .attr({'stroke-width': 0})
+             .center(0, 0);
+    this.shadow.delay(t1).animate(t2).fill(this.color);
+    this.shadow.animate(t3, 'elastic').scale(1);
+
+    return window.timePromise(t);
+  };
+
+  MLCloud.prototype.toDefault = function () {
+    this.hex.scale(1).ngon(HEX_SETTINGS).attr(HEX_SETTINGS).center(0, 0);
+    this.shadow.scale(1).ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(0, 0);
+  };
+
+  MLCloud.prototype.ding = function(reversed) {
+    var t = 300;
+    this.group.animate(t, 'expoIn').rotate(140 * (reversed ? 1 : -1)).loop(2, true);
+
+    return window.timePromise(t * 2);
+  };
+
+  MLCloud.prototype.colorShadow = function(color, animated) {
+    var t = 0, t1 = 200;
+
+    var obj = this.shadow;
+
+    if (animated) {
+      t += t1;
+      obj = obj.animate(t1);
+    }
+    obj.fill(color);
+
+    return window.timePromise(t);
+  };
+
+  MLCloud.fill = HEX_SETTINGS.fill;
+  MLCloud.edges = HEX_SETTINGS.edges;
+  MLCloud.r = SHADOW_SETTINGS.radius;
+
+  window.MLCloud = MLCloud;
+
+})(window);
+(function (window) {
+  'use strict';
+
+  var HEX_SETTINGS = {
+    fill: '#00d6ff',
+    edges: 6,
+    edgesStart: 3,
+    radius: 15,
+  };
+
+  var SHADOW_SETTINGS = {
+    fill: HEX_SETTINGS.fill,
+    edges: HEX_SETTINGS.edges,
+    radius: HEX_SETTINGS.radius * 1.3,
+    opacity: 0.3,
+  };
+
+  var LINE_SETTINGS = {
+    stroke: HEX_SETTINGS.fill,
+    'stroke-width': 1.5,
+    opacity: 0.7,
+  };
+
+  function MLHost(draw, vertex) {
+    this.cx = vertex.pos[0];
+    this.cy = vertex.pos[1];
+
+    this.HIDE_PARAMS = {
+      edges: HEX_SETTINGS.edgesStart,
+      radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+      fill: TangleCognIOTA.GRAPH_SETTINGS.stroke
+    };
+
+    this.group = draw.group().width(100);
+    this.shadow = this.drawShadow();
+    this.hex = this.drawHex(MLCloud.fill);
+  }
+
+  MLHost.prototype.drawShadow = function() {
+    var shadow = this.group.polygon().ngon(SHADOW_SETTINGS).opacity(0);
+    var _this = this;
+    setTimeout(function () {
+      shadow.center(_this.cx, _this.cy).attr(SHADOW_SETTINGS)
+    }, 10);
+    return shadow;
+  };
+
+  MLHost.prototype.drawHex = function() {
+    var hex = this.group.polygon().ngon(HEX_SETTINGS).opacity(0);
+    // it takes a little to change the path
+    hex.attr(HEX_SETTINGS);
+    var _this = this;
+    setTimeout(function () {
+      hex.center(_this.cx, _this.cy).opacity(1)
+    }, 10);
+    return hex;
+  };
+
+  MLHost.prototype.showHex = function() {
+    var t1 = 70;
+
+    this.hex.fill(this.HIDE_PARAMS.fill);
+
+    var r = TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+        edges = HEX_SETTINGS.edgesStart;
+
+    var steps = HEX_SETTINGS.edges - HEX_SETTINGS.edgesStart,
+        rStep = (HEX_SETTINGS.radius - r) / steps,
+        totalT = t1 * steps;
+
+    for (; edges <= HEX_SETTINGS.edges; edges++, r+=rStep) {
+      var hexAnimation = this.hex.animate(t1);
+      hexAnimation.ngon({edges: edges, radius: r}).center(this.cx, this.cy);
+      if (edges >= HEX_SETTINGS.edges - 1) {
+        hexAnimation.fill(HEX_SETTINGS.fill);
+      }
+    }
+
+    return window.timePromise(t1 * steps);
+  };
+
+  MLHost.prototype.showShadow = function() {
+    var t = 300, d = 80;
+    this.shadow.delay(100)
+               .animate(300, 'backOut')
+                .ngon({edges: SHADOW_SETTINGS.edges, radius: SHADOW_SETTINGS.radius})
+                .center(this.cx, this.cy);
+
+    return window.timePromise(t + d);
+  };
+
+  MLHost.prototype.hide = function() {
+    this.hex.ngon(this.HIDE_PARAMS)
+            .fill('transparent')
+            .opacity(1).center(this.cx, this.cy);
+
+    this.shadow.ngon({edges: SHADOW_SETTINGS.edges, radius: 0.1})
+               .opacity(SHADOW_SETTINGS.opacity)
+               .center(this.cx, this.cy);
+  };
+
+  MLHost.prototype.show = function(animated) {
+    if (animated) {
+      var _this = this;
+      return new Promise(function (resolve) {
+        _this.showHex(animated).then(function () {
+          _this.showShadow(animated).then(resolve);
+        });
+      });
+    } else {
+      var params = {
+        edges: HEX_SETTINGS.edgesStart,
+        radius: TangleCognIOTA.GRAPH_SETTINGS.r / 2,
+        fill: TangleCognIOTA.GRAPH_SETTINGS.fill
+      };
+      this.hex.ngon(HEX_SETTINGS).center(this.cx, this.cy).attr(HEX_SETTINGS).opacity(1);
+      this.shadow.ngon(SHADOW_SETTINGS).attr(SHADOW_SETTINGS).center(this.cx, this.cy);
+      return window.NOOPPromise;
+    }
+  };
+
+  MLHost.prototype.connectTo = function(neightbors) {
+    var _this = this;
+
+    var t1 = 150, d1 = 25, t2 = 180, t3 = 200;
+    var linesGroup = this.linesGroup = this.group.group();
+
+    neightbors.forEach(function (n) {
+      var pos = [_this.cx, _this.cy];
+      var line = linesGroup.line(new SVG.PointArray([pos, pos]));
+      line.attr(LINE_SETTINGS).opacity(0.3);
+
+      var middle = [
+        _this.cx - ((_this.cx - n.cx) / 2),
+        _this.cy - ((_this.cy - n.cy) / 2)
+      ];
+      line.animate(t1, 'sineOut').plot(new SVG.PointArray([pos, middle]));
+
+      line.delay(d1).animate(t2, 'sineOut').opacity(1);
+      line.animate(t3, 'sineIn').opacity(LINE_SETTINGS.opacity);
+    });
+
+    return window.timePromise(t1 + d1 + t2 + t3);
+  };
+
+  MLHost.prototype.toCenter = function(cx, cy) {
+    var t1 = 100, t2 = 250;
+    var _this = this;
+
+    this.linesGroup.animate(t1).opacity(0).once(1, function () {
+      _this.deleteLines();
+    });
+
+    this.hex.animate(t2, 'backIn').center(cx, cy);
+    this.shadow.animate(t2, 'backIn').center(cx, cy);
+
+    return window.timePromise(t2);
+  };
+
+  MLHost.prototype.disappear = function(cx, cy, r, e) {
+    var t1 = 300;
+    function disappear (elem, params) {
+      elem.animate(t1, '>').ngon({radius: r * 1.6, edges: e})
+                           .center(cx, cy)
+                           .opacity(0);
+    }
+
+    disappear(this.hex);
+    disappear(this.shadow);
+
+    return window.timePromise(t1);
+  };
+
+  MLHost.prototype.deleteLines = function() {
+    this.linesGroup.remove();
+  };
+
+  window.MLHost = MLHost;
+})(window);
+(function (window) {
+  'use strict';
+
   window.NOOP = Function.prototype;
   window.NOOPPromise = new Promise(function (resolve) {resolve()});
   window.timePromise = function (t) {
@@ -2930,4 +2896,38 @@ if ( typeof define === 'function' && define.amd ) {
       return process(0);
     });
   };
+})(window);
+(function (window) {
+  'use strict';
+
+  window.Random = {
+    range: function range(min, max) {
+      return Math.round(Math.random() * (max - min) + min);
+    },
+    choice: function choice(arr) {
+      var max = arr.length;
+      if (max === void 0) {
+        arr = Object.keys(arr);
+        max = arr.length;
+      }
+      var n = this.range(0, max - 1);
+      return arr[n];
+    },
+    shuffle: function shuffle(_a) {
+      var a = _a.slice();
+      var j, x, i;
+      for (i = a.length; i; i--) {
+          j = Math.floor(Math.random() * i);
+          x = a[i - 1];
+          a[i - 1] = a[j];
+          a[j] = x;
+      }
+      return a;
+    },
+    deviate: function deviate(i, d) {
+      var a = this.range(d * -1, d);
+      return i + a;
+    }
+  };
+
 })(window);
