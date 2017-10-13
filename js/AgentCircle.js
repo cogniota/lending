@@ -53,7 +53,7 @@
     return new Promise(function (resolve) {
       if (!animated) {
         _this.border.attr({'stroke-dashoffset': value});
-        if (params.toActive) {
+        if (params.active) {
           _this.border.attr(activeAttr);
         }
         return resolve();

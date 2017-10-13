@@ -12,16 +12,15 @@
     return new Promise(function (end) {
       function process(i) {
         var p = stack[i];
-        if (!p || stack.stop) return end();
-
+        if (!p || stack.stop === true) return end();
         return new Promise(function (resolve) {
-          if (stack.stop) {
+          if (stack.stop === true) {
             end();
-            resolve();
+            return resolve();
           }
           return p().then(resolve);
         }).then(function () {
-          if (!stack.stop) {
+          if ( stack.stop !== true) {
             process(i + 1);
           }
         });

@@ -14,9 +14,7 @@
 
     this.group = draw.group().move(this.cx, this.cy);
     var _this = this;
-    this.group.filter(function(add) {
-      _this.blurFilter = add.gaussianBlur(0);
-    });
+    this.blurFilter = undefined;
     this.img = this.group.image(this.SETTINGS.src, this.SETTINGS.w, this.SETTINGS.w);
     this.img.center(0, 0);
   }
@@ -24,7 +22,12 @@
   AgentImg.prototype.blur = function(blurValue) {
     if (!this.group) return window.NOOPPromise;
     var t = 200;
+    var _this = this;
+    this.group.filter(function(add) {
+      _this.blurFilter = add.gaussianBlur(0);
+    });
     this.blurFilter.animate(t, '<').attr('stdDeviation', blurValue);
+
     return window.timePromise(t);
   };
 
@@ -39,6 +42,11 @@
       obj = obj.animate(t1, '>');
     }
     obj.attr('stdDeviation', '0 0');
+
+    var _this = this;
+    setTimeout(function () {
+      _this.group.unfilter(true);
+    }, t);
     return window.timePromise(t);
   };
 

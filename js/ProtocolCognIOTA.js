@@ -198,20 +198,18 @@
     var bg = this.draw.image(IMG_SRC.bg, 500, 420);
     bg.backward();
 
-
-    var blurFilter, gridFilter;
-    bg.filter(function(add) {
-      blurFilter = add.gaussianBlur(0);
-    });
-    this.graph.group.filter(function (add) {
-      gridFilter = add.gaussianBlur(0);
-    });
-
     var _this = this;
 
+    var blurFilter, gridFilter;
     bg.blur = function (blurValue) {
       var t = 200;
 
+      bg.filter(function(add) {
+        blurFilter = add.gaussianBlur(0);
+      });
+      _this.graph.group.filter(function (add) {
+        gridFilter = add.gaussianBlur(0);
+      });
       blurFilter.animate(t, '<').attr('stdDeviation', blurValue);
       gridFilter.animate(t, '<').attr('stdDeviation', blurValue);
 
@@ -222,6 +220,11 @@
 
       blurFilter.animate(t, '>').attr('stdDeviation', '0 0');
       gridFilter.animate(t, '>').attr('stdDeviation', '0 0');
+
+      setTimeout(function () {
+        _this.graph.group.unfilter(true);
+        bg.unfilter(true);
+      }, t);
 
       return window.timePromise(t);
     };

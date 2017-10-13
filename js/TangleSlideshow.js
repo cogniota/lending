@@ -5,7 +5,9 @@
     description: 'firstPage-main-slideshow-item--description'
   };
 
-  var N = 6;
+  var N = 4;
+  var DEBUG = false;
+  // var DEBUG = true;
 
   function TangleSlideshow(parent) {
     this.parent = parent;
@@ -22,7 +24,7 @@
     this.step = 100 / count;
     var _this = this;
     slides.forEach(function (elem, i) {
-      // if (i > N) return
+      if (DEBUG && i > N) return
       var method = elem.getAttribute('method');
       var item = _this.createSlide(elem, i, method);
       _this.items.push(item);
@@ -31,8 +33,11 @@
 
     this.currentN = -1;
     this.currState = this.states.length;
-    // this.currState = 0;
-    // this.currentN = N;
+
+    if (DEBUG) {
+      this.currState = 0;
+      this.currentN = N;
+    }
 
     setTimeout(function () {
       _this.goNext();
@@ -122,7 +127,9 @@
     this.parent.style.transform = 'translate3d(' + translateVal + '%,0,0)';
 
     slide.play().then(function () {
+      if (!DEBUG) {
       _this.goNext();
+      }
     });
   };
 

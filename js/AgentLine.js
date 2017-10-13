@@ -26,7 +26,7 @@
   };
 
   AgentLine.prototype.hide = function() {
-    this.line.plot(this.sx, this.sy, this.sx, this.sy);
+    this.line.plot(this.sx, this.sy, this.sx, this.sy).opacity(0);
   };
 
   AgentLine.prototype.go = function(cx, cy, t) {
@@ -51,7 +51,7 @@
       obj.attr(ACTIVE_SETTINGS);
       obj = obj.animate(t2, 'quadOut');
     }
-    obj.attr(this.SETTINGS);
+    obj.attr(this.SETTINGS).opacity(1);
 
     return window.timePromise(t);
   };

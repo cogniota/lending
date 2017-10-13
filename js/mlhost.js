@@ -59,7 +59,7 @@
   MLHost.prototype.showHex = function() {
     var t1 = 70;
 
-    this.hex.fill(this.HIDE_PARAMS.fill);
+    this.hex.fill(this.HIDE_PARAMS.fill).opacity(1);
 
     var r = TangleCognIOTA.GRAPH_SETTINGS.r / 2,
         edges = HEX_SETTINGS.edgesStart;
@@ -68,12 +68,15 @@
         rStep = (HEX_SETTINGS.radius - r) / steps,
         totalT = t1 * steps;
 
-    for (; edges <= HEX_SETTINGS.edges; edges++, r+=rStep) {
+    var color = new SVG.Color(this.HIDE_PARAMS.fill);
+    var colorMorph = 0;
+    var colorMorphStep = 1 / steps;
+    color.morph(HEX_SETTINGS.fill);
+
+    for (; edges <= HEX_SETTINGS.edges; edges++, r+=rStep, colorMorph += colorMorphStep) {
       var hexAnimation = this.hex.animate(t1);
-      hexAnimation.ngon({edges: edges, radius: r}).center(this.cx, this.cy);
-      if (edges >= HEX_SETTINGS.edges - 1) {
-        hexAnimation.fill(HEX_SETTINGS.fill);
-      }
+      var stepColor = color.at(colorMorph).toHex();
+      hexAnimation.ngon({edges: edges, radius: r}).center(this.cx, this.cy).fill(stepColor);
     }
 
     return window.timePromise(t1 * steps);
@@ -91,8 +94,8 @@
 
   MLHost.prototype.hide = function() {
     this.hex.ngon(this.HIDE_PARAMS)
-            .fill('transparent')
-            .opacity(1).center(this.cx, this.cy);
+            .fill(this.HIDE_PARAMS.fill)
+            .opacity(0).center(this.cx, this.cy);
 
     this.shadow.ngon({edges: SHADOW_SETTINGS.edges, radius: 0.1})
                .opacity(SHADOW_SETTINGS.opacity)

@@ -17,34 +17,33 @@
     var nav;
     slideshow = new ProtocolSlideshow(parent, nav);
 
-    secondPage.style.left = bbox.x + 'px';
-    secondPage.style.top = bbox.y + 'px';
+    secondPage.style.left = bbox.left + 'px';
+    secondPage.style.top = bbox.top + 'px';
     secondPage.style.width = bbox.width + 'px';
     secondPage.style.height = bbox.height + 'px';
 
-    var isOpen = false;
     var closeProtocolBtnID = 'closeProtocolExample';
     var closeProtocolBtn = document.getElementById(closeProtocolBtnID);
+    var secondPageBodyClass = 'secondPage';
     function toggle() {
+      var isOpen = classie.has(document.body, secondPageBodyClass);
       if (isOpen === true) {
-        document.body.className = '';
         slideshow.stop();
-        isOpen = false;
+        classie.remove(document.body, secondPageBodyClass);
         closeProtocolBtn.removeEventListener('click', toggle);
         setTimeout(function () {
-          secondPage.addEventListener('click', toggle);
+          secondPage.addEventListener('click', toggle, false);
         }, 200);
       } else {
-        document.body.className = 'secondPage';
+        classie.add(document.body, secondPageBodyClass);
         setTimeout(function () {
           slideshow.play();
-          closeProtocolBtn.addEventListener('click', toggle);
+          closeProtocolBtn.addEventListener('click', toggle, false);
         }, 200);
-        isOpen = true;
         secondPage.removeEventListener('click', toggle);
       }
     };
-    secondPage.addEventListener('click', toggle);
+    secondPage.addEventListener('click', toggle, false);
   }
 
   function createMain() {

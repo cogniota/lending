@@ -231,7 +231,6 @@
 
   TangleCognIOTA.prototype.shopRequests = function(end, params) {
     params = params || {};
-    var _this = this;
 
     if (params.clear) {
       this.agents.forEach(function (agent) {
@@ -241,20 +240,39 @@
       return end();
     }
 
-    var promise, animated = !params.forced;
-    this.agents.forEach(function (agent) {
-      promise = agent.show(animated);
-    });
+    else if (params.forced) {
+      this.agents.forEach(function (agent) {
+        agent.show();
+      });
+      return this.shop.activate().then(end);
+    }
 
-    return promise.then(function () {
-      if (params.forced) {
-        return _this.shop.activate(false).then(end);
-      }
+    else {
+      var _this = this;
+      var stack = [];
 
-      return setTimeout(function () {
-        _this.shop.sendRequest().then(end);
-      }, 1000);
-    });
+      stack.push(function () {
+        var promise;
+        _this.agents.forEach(function (agent) {
+          promise = agent.show(true);
+        });
+        return promise;
+      });
+
+      stack.push(function () {
+        return window.timePromise(1000);
+      });
+
+      stack.push(function () {
+        return _this.shop.sendRequest();
+      });
+
+      stack.push(function () {
+        return window.NOOPPromise.then(end);
+      });
+      this.stack = stack;
+      return window.promisesStack(stack);
+    }
   };
 
   TangleCognIOTA.prototype.mlSendsResponse = function(end, params) {
