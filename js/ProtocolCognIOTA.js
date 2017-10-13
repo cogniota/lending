@@ -47,7 +47,7 @@
     whouse: 'dist/img/storage.png',
     shop: 'dist/img/shopping.png',
     carEmpty: 'dist/img/carEmpty.png',
-    carFull: 'dist/img/car.png',
+    carFull: 'dist/img/carFull.png',
     tree: 'dist/img/tree.png',
   };
 

@@ -11,6 +11,7 @@
     w: 68,
     h: 60,
     fill: 'rgb(237, 236, 218)',
+    'fill-opacity': 1,
     minW: 530,
     maxW: 900,
   };
@@ -74,7 +75,7 @@
     svgParent.setAttribute('id', svgId);
     var draw = SVG(svgId);
     var path = draw.path(slideOptions.paths.rect)
-                   .fill(slideOptions.fill)
+                   .attr({fill: slideOptions.fill, 'fill-opacity': slideOptions['fill-opacity']})
                    .center(cx, cy)
                    .scale(sx, sy);
 

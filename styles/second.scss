@@ -13,7 +13,8 @@ $green : #43a047;
   transition: opacity 0.3s 0.5s,
               width 0.4s 0.1s, height 0.4s 0.1s,
               top 0.4s 0.1s, left 0.4s 0.1s,
-              background-color 0.4s 0.1s;
+              background-color 0.4s 0.1s
+              background-image 0.3s 0.3s;
 
   box-sizing: border-box;
   background-color: $green;
@@ -40,7 +41,11 @@ body.secondPage #secondPage {
   pointer-events: auto;
   transition: width 0.4s 0.1s, height 0.4s 0.1s,
               top 0.4s 0.1s, left 0.4s 0.1s,
-              background-color 0.4s 0.1s;
+              background-color 0.4s 0.1s
+              background-image 0.2s 0.1s;
+
+  background-color: #52698c;
+  background-image: url('bg/9.jpg');
 
 }
 
